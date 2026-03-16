@@ -1,0 +1,79 @@
+.page {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scan {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: scan-line 2s linear infinite;
+  z-index: 1;
+}
+
+.center {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(480px, 90vw);
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 8px;
+  text-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.version {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+}
+
+.log {
+  width: 100%;
+  background: rgba(0,229,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-height: 140px;
+  font-size: 12px;
+  font-family: var(--font);
+}
+
+.logLine { display: flex; gap: 8px; margin: 2px 0; opacity: 0.6; }
+.current { opacity: 1; color: var(--cyan); }
+.done    { color: var(--text-muted); }
+.prompt  { color: var(--cyan); }
+
+.progressBar {
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan-glow);
+  transition: width 0.4s ease;
+}
+
+.progressText {
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+}

@@ -1,0 +1,35 @@
+.container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.msg { font-size: 13px; line-height: 1.4; flex: 1; }
+
+.close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+}
+.close:hover { color: var(--text); }

@@ -1,0 +1,24 @@
+.page { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.header { display: flex; align-items: center; gap: 10px; }
+.title { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+.info {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.link { color: var(--cyan); }
+.wip {
+  display: inline-block;
+  margin-top: 16px;
+  background: var(--cyan-dim);
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 10px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+}
