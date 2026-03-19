@@ -1,6 +1,12 @@
 import { api } from './api'
 import type { User, TokenPair } from '@/types'
 
+export interface TwoFactorSetup {
+  qr_code: string
+  secret: string
+  otpauth_url: string
+}
+
 export const authService = {
   async login(email: string, password: string): Promise<TokenPair> {
     const form = new URLSearchParams({ username: email, password })
@@ -15,13 +21,13 @@ export const authService = {
     return data
   },
 
-  async verify2fa(code: string): Promise<TokenPair> {
-    const { data } = await api.post<TokenPair>('/auth/2fa/verify', { code })
+  async verify2fa(code: string, otpToken: string): Promise<TokenPair> {
+    const { data } = await api.post<TokenPair>('/auth/2fa/verify', { code, otp_token: otpToken })
     return data
   },
 
-  async setup2fa(): Promise<{ qr_code: string; secret: string; otpauth_url: string }> {
-    const { data } = await api.post('/auth/2fa/enable')
+  async setup2fa(): Promise<TwoFactorSetup> {
+    const { data } = await api.post<TwoFactorSetup>('/auth/2fa/enable')
     return data
   },
 

@@ -1,6 +1,12 @@
 import type { WsMessage } from '@/types'
 
-const WS_BASE = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/api/v1'
+function normalizeWsBase(rawBase?: string): string {
+  const trimmed = rawBase?.trim().replace(/\/+$/, '')
+  if (!trimmed) return 'ws://localhost:8000'
+  return trimmed.replace(/\/api(?:\/v1)?$/, '')
+}
+
+const WS_BASE = normalizeWsBase(import.meta.env.VITE_WS_URL)
 
 type MessageHandler = (msg: WsMessage) => void
 
@@ -12,7 +18,7 @@ class WebSocketService {
 
   connect(token: string): void {
     if (this.ws?.readyState === WebSocket.OPEN) return
-    this.ws = new WebSocket(`${WS_BASE}/voice/ws?token=${token}`)
+    this.ws = new WebSocket(`${WS_BASE}/api/v1/voice/ws?token=${token}`)
 
     this.ws.onopen = () => {
       console.log('[WS] Connected')

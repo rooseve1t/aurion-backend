@@ -22,7 +22,17 @@ export function AuthPage() {
   const [showPw, setShowPw]     = useState(false)
   const [loading, setLoading]   = useState(false)
 
-  const { login, setTokens, setUser, needs2FA, setNeeds2FA, error, clearError } = useAuthStore()
+  const {
+    login,
+    setTokens,
+    setUser,
+    needs2FA,
+    pending2FAToken,
+    setNeeds2FA,
+    error,
+    clearError,
+    isLoading,
+  } = useAuthStore()
   const toast = useToast()
 
   useEffect(() => { if (needs2FA) setMode('2fa') }, [needs2FA])
@@ -41,6 +51,8 @@ export function AuthPage() {
       await authService.register(email, username, password)
       toast.success('Аккаунт создан. Войдите.')
       setMode('login')
+      navigate('/auth/login')
+      setPassword('')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Ошибка'
       toast.error(msg)
@@ -51,9 +63,15 @@ export function AuthPage() {
 
   const handle2FA = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!pending2FAToken) {
+      toast.error('Сессия 2FA истекла, войдите заново')
+      setMode('login')
+      setNeeds2FA(false)
+      return
+    }
     setLoading(true)
     try {
-      const tokens = await authService.verify2fa(code)
+      const tokens = await authService.verify2fa(code, pending2FAToken)
       setTokens(tokens.access_token, tokens.refresh_token)
       const user = await authService.getMe()
       setUser(user)
@@ -131,9 +149,9 @@ export function AuthPage() {
               </div>
             </div>
             <button type="submit" className="btn btn-cyan" style={{ width: '100%' }}
-              disabled={loading}>
+              disabled={isLoading}>
               <LogIn size={14} />
-              {loading ? 'ВХОД...' : 'ВОЙТИ'}
+              {isLoading ? 'ВХОД...' : 'ВОЙТИ'}
             </button>
             <button type="button" className="btn btn-ghost" style={{ width: '100%' }}
               onClick={() => { setMode('register'); navigate('/auth/register') }}>

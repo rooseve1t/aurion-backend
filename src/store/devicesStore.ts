@@ -1,14 +1,14 @@
 import { create } from 'zustand'
 import type { Device } from '@/types'
 import { smarthomeService } from '@/services/smarthome'
-import toast from 'react-hot-toast'
+import { useUIStore } from './uiStore'
 
 interface DevicesState {
   devices: Device[]
   loading: boolean
   fetch: () => Promise<void>
-  control: (id: number, cmd: Record<string, unknown>) => Promise<void>
-  optimize: () => Promise<void>
+  control: (id: number, command: string, params?: Record<string, unknown>) => Promise<void>
+  optimize: () => Promise<{ savings_kwh: number; actions: string[] }>
 }
 
 export const useDevicesStore = create<DevicesState>()((set, get) => ({
@@ -18,22 +18,22 @@ export const useDevicesStore = create<DevicesState>()((set, get) => ({
   fetch: async () => {
     set({ loading: true })
     try {
-      const devices = await smarthomeService.getDevices()
+      const devices = await smarthomeService.listDevices()
       set({ devices })
     } finally {
       set({ loading: false })
     }
   },
 
-  control: async (id, cmd) => {
-    await smarthomeService.control(id, cmd)
+  control: async (id, command, params = {}) => {
+    await smarthomeService.control(id, command, params)
     await get().fetch()
-    toast.success('Команда отправлена')
+    useUIStore.getState().showToast('Команда отправлена', 'success')
   },
 
   optimize: async () => {
     const result = await smarthomeService.optimize()
-    toast.success('Оптимизация завершена')
+    useUIStore.getState().showToast('Оптимизация завершена', 'success')
     return result
   },
 }))

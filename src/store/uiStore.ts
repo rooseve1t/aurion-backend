@@ -13,6 +13,7 @@ interface UIState {
   sidebarOpen: boolean
   toasts: Toast[]
   setActiveModule: (m: string) => void
+  setSidebarOpen: (value: boolean) => void
   toggleSidebar: () => void
   showToast: (message: string, type?: ToastType) => void
   dismissToast: (id: string) => void
@@ -24,6 +25,7 @@ export const useUIStore = create<UIState>((set) => ({
   toasts: [],
 
   setActiveModule: (m) => set({ activeModule: m }),
+  setSidebarOpen: (value) => set({ sidebarOpen: value }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
   showToast: (message, type = 'info') => {
@@ -37,3 +39,5 @@ export const useUIStore = create<UIState>((set) => ({
   dismissToast: (id) =>
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }))
+
+export const useUiStore = useUIStore

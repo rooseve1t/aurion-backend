@@ -6,6 +6,7 @@ export interface User {
   role: 'user' | 'admin' | 'creator'
   is_active: boolean
   is_2fa_enabled: boolean
+  two_factor_enabled?: boolean
   created_at: string
 }
 
@@ -32,6 +33,7 @@ export interface Device {
   id: number
   name: string
   device_type: DeviceType
+  type?: DeviceType
   room: string
   is_online: boolean
   state: Record<string, unknown>
@@ -56,10 +58,15 @@ export interface AgentTask {
   id: number
   agent_id: number
   action: string
+  type?: string
   parameters: Record<string, unknown>
+  input_data?: Record<string, unknown>
   status: TaskStatus
   result: unknown
+  output_data?: unknown
+  error_message?: string | null
   created_at: string
+  updated_at?: string
 }
 
 // ── Payments ──────────────────────────────────────────────────────────────────
@@ -137,4 +144,11 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: string
+}
+
+export interface WsMessage {
+  type: 'chat_response' | 'agent_task_update' | 'error'
+  content?: string
+  status?: string
+  task_id?: number
 }

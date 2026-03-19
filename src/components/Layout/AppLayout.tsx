@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useSystemStore } from '@/store/systemStore'
-import { ToastContainer } from '@/components/Toast/ToastContainer'
 import { SideNav } from './SideNav'
 import { BottomNav } from './BottomNav'
 import styles from './AppLayout.module.css'
@@ -30,7 +29,6 @@ export function AppLayout() {
         <Outlet />
       </main>
       <BottomNav />
-      <ToastContainer />
     </div>
   )
 }

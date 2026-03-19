@@ -93,7 +93,7 @@ export function ProfilePage() {
               <p className={styles.hint}>
                 Отсканируйте QR-код в Google Authenticator или Authy
               </p>
-              <img src={`data:image/png;base64,${qrData.qr_code}`} alt="QR 2FA" className={styles.qr} />
+              <img src={qrData.qr_code} alt="QR 2FA" className={styles.qr} />
               <div className={styles.secret}>
                 <span className="label">СЕКРЕТНЫЙ КЛЮЧ:</span>
                 <code className={styles.secretCode}>{qrData.secret}</code>

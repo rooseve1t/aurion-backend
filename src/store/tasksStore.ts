@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Agent, AgentTask } from '@/types'
 import { agentsService } from '@/services/agents'
-import toast from 'react-hot-toast'
+import { useUIStore } from './uiStore'
 
 interface TasksState {
   agents: Agent[]
@@ -9,8 +9,8 @@ interface TasksState {
   total: number
   loading: boolean
   fetchAgents: () => Promise<void>
-  fetchTasks: (status?: string) => Promise<void>
-  createTask: (type: string, input: Record<string, unknown>) => Promise<void>
+  fetchTasks: () => Promise<void>
+  createTask: (action: string, parameters: Record<string, unknown>) => Promise<void>
   cancelTask: (id: number) => Promise<void>
   swarm: (goal: string) => Promise<void>
 }
@@ -22,35 +22,44 @@ export const useTasksStore = create<TasksState>()((set, get) => ({
   loading: false,
 
   fetchAgents: async () => {
-    const agents = await agentsService.list()
+    const agents = await agentsService.listAgents()
     set({ agents })
   },
 
-  fetchTasks: async (status) => {
+  fetchTasks: async () => {
     set({ loading: true })
     try {
-      const { tasks, total } = await agentsService.getTasks(status)
-      set({ tasks, total })
+      const tasks = await agentsService.listTasks()
+      set({ tasks, total: tasks.length })
     } finally {
       set({ loading: false })
     }
   },
 
-  createTask: async (type, input) => {
-    await agentsService.createTask(type, input)
-    toast.success('Задача запущена')
+  createTask: async (action, parameters) => {
+    let agents = get().agents
+    if (agents.length === 0) {
+      agents = await agentsService.listAgents()
+      set({ agents })
+    }
+    if (agents.length === 0) {
+      useUIStore.getState().showToast('Сначала создайте агента', 'warning')
+      return
+    }
+    await agentsService.createTask(agents[0].id, action, parameters)
+    useUIStore.getState().showToast('Задача запущена', 'success')
     await get().fetchTasks()
   },
 
   cancelTask: async (id) => {
     await agentsService.cancelTask(id)
-    toast.success('Задача отменена')
+    useUIStore.getState().showToast('Задача отменена', 'success')
     await get().fetchTasks()
   },
 
   swarm: async (goal) => {
-    const result = await agentsService.swarm(goal)
-    toast.success(`Роевая задача: ${result.subtasks_created} подзадач`)
+    await agentsService.runSwarm(goal)
+    useUIStore.getState().showToast('Рой агентов запущен', 'success')
     await get().fetchTasks()
   },
 }))
