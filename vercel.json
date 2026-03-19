@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
+      "source": "/health",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/api/:path*",
-      "destination": "https://aurion-backend-production.up.railway.app/api/:path*"
+      "destination": "/api/index.py"
     },
     {
       "source": "/(.*)",

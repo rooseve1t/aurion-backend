@@ -11,7 +11,8 @@ function normalizeWsBase(rawBase?: string): string {
   if (apiBase?.startsWith('https://')) return apiBase.replace(/^https:\/\//, 'wss://').replace(/\/api(?:\/v1)?$/, '')
   if (apiBase?.startsWith('http://')) return apiBase.replace(/^http:\/\//, 'ws://').replace(/\/api(?:\/v1)?$/, '')
 
-  return `ws://${window.location.host}`
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${wsProtocol}//${window.location.host}`
 }
 
 class VoiceSocket {

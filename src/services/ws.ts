@@ -2,8 +2,14 @@ import type { WsMessage } from '@/types'
 
 function normalizeWsBase(rawBase?: string): string {
   const trimmed = rawBase?.trim().replace(/\/+$/, '')
-  if (!trimmed) return 'ws://localhost:8000'
-  return trimmed.replace(/\/api(?:\/v1)?$/, '')
+  if (trimmed) return trimmed.replace(/\/api(?:\/v1)?$/, '')
+
+  const apiBase = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, '')
+  if (apiBase?.startsWith('https://')) return apiBase.replace(/^https:\/\//, 'wss://').replace(/\/api(?:\/v1)?$/, '')
+  if (apiBase?.startsWith('http://')) return apiBase.replace(/^http:\/\//, 'ws://').replace(/\/api(?:\/v1)?$/, '')
+
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${wsProtocol}//${window.location.host}`
 }
 
 const WS_BASE = normalizeWsBase(import.meta.env.VITE_WS_URL)
