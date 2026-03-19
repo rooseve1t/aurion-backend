@@ -30,6 +30,11 @@ TWO_FACTOR_CHALLENGE_TTL_MINUTES = int(os.getenv("AURION_2FA_CHALLENGE_TTL_MINUT
 DEMO_EMAIL = "demo@aurionai.ru"
 DEMO_PASSWORD = "Demo1234!"
 DEMO_USERNAME = "demo"
+CREATOR_EMAILS = {
+    item.strip().lower()
+    for item in os.getenv("AURION_CREATOR_EMAILS", "martinleterier@mail.ru").split(",")
+    if item.strip()
+}
 
 DEFAULT_TARIFFS = [
     {
@@ -207,6 +212,10 @@ def get_connection() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def role_for_email(email: str) -> str:
+    return "creator" if email.strip().lower() in CREATOR_EMAILS else "user"
 
 
 def json_dumps(value: Any) -> str:
@@ -670,6 +679,17 @@ def seed_reference_data(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def ensure_creator_roles(conn: sqlite3.Connection) -> None:
+    if not CREATOR_EMAILS:
+        return
+    placeholders = ", ".join("?" for _ in CREATOR_EMAILS)
+    conn.execute(
+        f"UPDATE users SET role = 'creator' WHERE lower(email) IN ({placeholders})",
+        tuple(sorted(CREATOR_EMAILS)),
+    )
+    conn.commit()
+
+
 def get_user_by_email(conn: sqlite3.Connection, email: str) -> Optional[sqlite3.Row]:
     return conn.execute("SELECT * FROM users WHERE email = ?", (email.lower(),)).fetchone()
 
@@ -838,9 +858,9 @@ def seed_demo_user(conn: sqlite3.Connection) -> None:
         INSERT INTO users (
             id, email, username, password_hash, password_salt, role,
             is_active, is_2fa_enabled, two_factor_secret, two_factor_pending, created_at
-        ) VALUES (?, ?, ?, ?, ?, 'user', 1, 0, NULL, 0, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, NULL, 0, ?)
         """,
-        (user_id, DEMO_EMAIL, DEMO_USERNAME, password_hash, salt, iso_now()),
+        (user_id, DEMO_EMAIL, DEMO_USERNAME, password_hash, salt, role_for_email(DEMO_EMAIL), iso_now()),
     )
     conn.commit()
     ensure_seeded_workspace(conn, user_id)
@@ -851,6 +871,7 @@ def bootstrap() -> None:
     with get_connection() as conn:
         seed_reference_data(conn)
         seed_demo_user(conn)
+        ensure_creator_roles(conn)
 
 
 def create_auth_pair(conn: sqlite3.Connection, user_row: sqlite3.Row) -> dict[str, str]:
@@ -1058,9 +1079,9 @@ async def register(data: RegisterData) -> dict[str, Any]:
             INSERT INTO users (
                 id, email, username, password_hash, password_salt, role,
                 is_active, is_2fa_enabled, two_factor_secret, two_factor_pending, created_at
-            ) VALUES (?, ?, ?, ?, ?, 'user', 1, 0, NULL, 0, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, NULL, 0, ?)
             """,
-            (user_id, email, username, password_hash, salt, iso_now()),
+            (user_id, email, username, password_hash, salt, role_for_email(email), iso_now()),
         )
         conn.commit()
         ensure_seeded_workspace(conn, user_id)
