@@ -1,0 +1,11 @@
+app/
+data/
+docker/
+logs/
+uploads/
+scripts/
+Dockerfile
+requirements.txt
+alembic.ini
+docker-compose.monitoring.yml
+docker-compose.prod.yml
