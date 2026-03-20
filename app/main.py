@@ -1524,15 +1524,17 @@ async def register(data: RegisterData) -> dict[str, Any]:
 @app.post("/api/v1/auth/token")
 async def login(request: Request) -> JSONResponse:
     payload = await parse_request_payload(request)
-    email = (payload.get("username") or payload.get("email") or "").strip().lower()
+    login_value = (payload.get("username") or payload.get("email") or "").strip().lower()
     password = (payload.get("password") or "").strip()
-    if not email or not password:
+    if not login_value or not password:
         raise HTTPException(status_code=422, detail="Нужны email/username и password")
 
     with get_connection() as conn:
-        user_row = get_user_by_email(conn, email)
+        user_row = get_user_by_email(conn, login_value)
+        if not user_row:
+            user_row = get_user_by_username(conn, login_value)
         if not user_row or not verify_password(password, user_row["password_salt"], user_row["password_hash"]):
-            raise HTTPException(status_code=401, detail="Неверный email или пароль")
+            raise HTTPException(status_code=401, detail="Неверный email/username или пароль")
 
         if bool(user_row["is_2fa_enabled"]):
             challenge_id = str(uuid4())
