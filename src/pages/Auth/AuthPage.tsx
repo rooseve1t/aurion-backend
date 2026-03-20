@@ -15,7 +15,7 @@ export function AuthPage() {
   const isRegister = location.pathname.includes('register')
 
   const [mode, setMode] = useState<Mode>(isRegister ? 'register' : 'login')
-  const [email, setEmail]       = useState('')
+  const [loginValue, setLoginValue] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode]         = useState('')
@@ -40,7 +40,7 @@ export function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     clearError()
-    const ok = await login(email, password)
+    const ok = await login(loginValue, password)
     if (ok) navigate('/dashboard')
   }
 
@@ -48,7 +48,7 @@ export function AuthPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      await authService.register(email, username, password)
+      await authService.register(loginValue, username, password)
       toast.success('Аккаунт создан. Войдите.')
       setMode('login')
       navigate('/auth/login')
@@ -133,9 +133,9 @@ export function AuthPage() {
         {mode === 'login' && (
           <form onSubmit={handleLogin} className={styles.form}>
             <div className={styles.field}>
-              <label className="label">EMAIL</label>
-              <input className="input" type="email" value={email}
-                onChange={(e) => setEmail(e.target.value)} placeholder="user@aurionai.ru" required />
+              <label className="label">EMAIL ИЛИ USERNAME</label>
+              <input className="input" type="text" value={loginValue}
+                onChange={(e) => setLoginValue(e.target.value)} placeholder="user@aurionai.ru или ceo.martin" required />
             </div>
             <div className={styles.field}>
               <label className="label">ПАРОЛЬ</label>
@@ -166,8 +166,8 @@ export function AuthPage() {
           <form onSubmit={handleRegister} className={styles.form}>
             <div className={styles.field}>
               <label className="label">EMAIL</label>
-              <input className="input" type="email" value={email}
-                onChange={(e) => setEmail(e.target.value)} required />
+              <input className="input" type="email" value={loginValue}
+                onChange={(e) => setLoginValue(e.target.value)} required />
             </div>
             <div className={styles.field}>
               <label className="label">ИМЯ ПОЛЬЗОВАТЕЛЯ</label>
