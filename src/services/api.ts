@@ -9,6 +9,7 @@ function normalizeApiBase(rawBase?: string): string {
 }
 
 const BASE_URL = normalizeApiBase(import.meta.env.VITE_API_URL)
+const FALLBACK_BASE_URL = '/api/v1'
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -42,8 +43,15 @@ function shouldSkipRefresh(url?: string): boolean {
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _fallbackUsed?: boolean }
     const refresh = localStorage.getItem('refresh_token')
+
+    // Network-level fallback for mobile users when external API tunnel is temporarily unavailable.
+    if (!error.response && original && BASE_URL !== FALLBACK_BASE_URL && !original._fallbackUsed) {
+      original._fallbackUsed = true
+      original.baseURL = FALLBACK_BASE_URL
+      return api(original)
+    }
 
     if (
       error.response?.status !== 401 ||
