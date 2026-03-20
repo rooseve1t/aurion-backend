@@ -21,6 +21,7 @@ class VoiceSocket {
   private onStatus: StatusHandler | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private manualClose = false
+  private audioPlayer: HTMLAudioElement | null = null
 
   connect(onMessage: WSHandler, onStatus: StatusHandler): void {
     this.onMsg = onMessage
@@ -45,11 +46,24 @@ class VoiceSocket {
       try {
         const data = JSON.parse(e.data)
         if (data.content) {
+          const ttsAudioB64 = data?.tts?.audio_b64 as string | undefined
+          const ttsMimeType = (data?.tts?.mime_type as string | undefined) || 'audio/wav'
+          if (ttsAudioB64) {
+            const src = `data:${ttsMimeType};base64,${ttsAudioB64}`
+            if (!this.audioPlayer) this.audioPlayer = new Audio()
+            this.audioPlayer.src = src
+            this.audioPlayer.play().catch(() => undefined)
+          }
           onMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
             content: data.content,
             timestamp: new Date().toISOString(),
+            emotion: data?.emotion,
+            voice_persona: data?.voice_persona,
+            tts_audio_b64: ttsAudioB64,
+            tts_provider: data?.tts?.provider,
+            tts_mime_type: ttsMimeType,
           })
         }
       } catch {/* ignore */ }
@@ -67,6 +81,7 @@ class VoiceSocket {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
     this.ws?.close()
     this.ws = null
+    this.audioPlayer = null
   }
 }
 

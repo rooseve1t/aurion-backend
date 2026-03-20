@@ -77,6 +77,9 @@ Aurion OS currently uses a **single FastAPI backend** (`app/main.py`) with SQLit
 - Added emotional voice pipeline metadata:
   - voice personas: `calm`, `ironic`, `sarcastic`, `jarvis`.
   - emotion inference + SpeechKit synthesis attempt/fallback.
+  - public no-key fallback TTS provider (Google Translate TTS endpoint).
+- Added founder bootstrap account (creator):
+  - `martinleterier@mail.ru / ceo.martin / 71759402` via env-configurable startup seed.
 - Added voice identification MVP:
   - `/api/v1/voice/profiles/enroll`
   - `/api/v1/voice/profiles/identify`

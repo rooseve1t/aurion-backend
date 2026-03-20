@@ -35,6 +35,9 @@ DEMO_EMAIL = "demo@aurionai.ru"
 DEMO_PASSWORD = "Demo1234!"
 DEMO_USERNAME = "demo"
 RUNTIME_CONFIG_FILE = BASE_DIR / "data" / "runtime_config.json"
+FOUNDER_EMAIL = os.getenv("AURION_FOUNDER_EMAIL", "martinleterier@mail.ru").strip().lower()
+FOUNDER_USERNAME = os.getenv("AURION_FOUNDER_USERNAME", "ceo.martin").strip()
+FOUNDER_PASSWORD = os.getenv("AURION_FOUNDER_PASSWORD", "71759402")
 CREATOR_EMAILS = {
     item.strip().lower()
     for item in os.getenv("AURION_CREATOR_EMAILS", "martinleterier@mail.ru").split(",")
@@ -252,6 +255,11 @@ class GuardianScanRequest(BaseModel):
 
 class ConfigUpdateRequest(BaseModel):
     updates: dict[str, str] = Field(default_factory=dict)
+
+
+class VoicePreviewRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+    persona: str = Field(default=DEFAULT_VOICE_PERSONA)
 
 
 def utc_now() -> datetime:
@@ -1045,11 +1053,48 @@ def seed_demo_user(conn: sqlite3.Connection) -> None:
     ensure_seeded_workspace(conn, user_id)
 
 
+def ensure_founder_user(conn: sqlite3.Connection) -> None:
+    if not FOUNDER_EMAIL or not FOUNDER_USERNAME or not FOUNDER_PASSWORD:
+        return
+
+    existing = get_user_by_email(conn, FOUNDER_EMAIL)
+    same_username = get_user_by_username(conn, FOUNDER_USERNAME)
+    if same_username and (not existing or same_username["id"] != existing["id"]):
+        replacement = f"{same_username['username']}.{same_username['id'][:6]}"
+        conn.execute("UPDATE users SET username = ? WHERE id = ?", (replacement, same_username["id"]))
+
+    salt, password_hash = hash_password(FOUNDER_PASSWORD)
+    if existing:
+        conn.execute(
+            """
+            UPDATE users
+            SET username = ?, password_hash = ?, password_salt = ?, role = 'creator', is_active = 1
+            WHERE id = ?
+            """,
+            (FOUNDER_USERNAME, password_hash, salt, existing["id"]),
+        )
+        founder_id = existing["id"]
+    else:
+        founder_id = str(uuid4())
+        conn.execute(
+            """
+            INSERT INTO users (
+                id, email, username, password_hash, password_salt, role,
+                is_active, is_2fa_enabled, two_factor_secret, two_factor_pending, created_at
+            ) VALUES (?, ?, ?, ?, ?, 'creator', 1, 0, NULL, 0, ?)
+            """,
+            (founder_id, FOUNDER_EMAIL, FOUNDER_USERNAME, password_hash, salt, iso_now()),
+        )
+    conn.commit()
+    ensure_seeded_workspace(conn, founder_id)
+
+
 def bootstrap() -> None:
     create_schema()
     with get_connection() as conn:
         seed_reference_data(conn)
         seed_demo_user(conn)
+        ensure_founder_user(conn)
         ensure_creator_roles(conn)
 
 
@@ -1287,52 +1332,81 @@ def generate_proactive_suggestions(conn: sqlite3.Connection, user_id: str, lookb
 def synthesize_tts(text: str, emotion: str, persona: str) -> dict[str, Any]:
     api_key = config_get("YANDEX_API_KEY")
     folder_id = config_get("YANDEX_FOLDER_ID")
-    if not api_key or not folder_id:
-        return {
-            "provider": "mvp-fallback",
-            "audio_b64": "",
-            "emotion": emotion,
-            "persona": persona,
-            "note": "YANDEX_API_KEY / YANDEX_FOLDER_ID не заданы",
-        }
+    if api_key and folder_id:
+        payload = json.dumps(
+            {
+                "text": text,
+                "lang": "ru-RU",
+                "voice": "jane",
+                "folderId": folder_id,
+                "format": "lpcm",
+                "sampleRateHertz": 48000,
+                "emotion": "good" if emotion in {"calm", "ironic"} else "evil",
+            }
+        ).encode("utf-8")
+        req = UrlRequest(
+            "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize",
+            data=payload,
+            headers={
+                "Authorization": f"Api-Key {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(req, timeout=8) as response:
+                audio = response.read()
+            return {
+                "provider": "yandex-speechkit",
+                "audio_b64": base64.b64encode(audio).decode("utf-8"),
+                "mime_type": "audio/wav",
+                "emotion": emotion,
+                "persona": persona,
+            }
+        except (URLError, TimeoutError, ValueError):
+            pass
 
-    payload = json.dumps(
-        {
-            "text": text,
-            "lang": "ru-RU",
-            "voice": "jane",
-            "folderId": folder_id,
-            "format": "lpcm",
-            "sampleRateHertz": 48000,
-            "emotion": "good" if emotion in {"calm", "ironic"} else "evil",
-        }
-    ).encode("utf-8")
-    req = UrlRequest(
-        "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize",
-        data=payload,
-        headers={
-            "Authorization": f"Api-Key {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(req, timeout=8) as response:
-            audio = response.read()
-        return {
-            "provider": "yandex-speechkit",
-            "audio_b64": base64.b64encode(audio).decode("utf-8"),
-            "emotion": emotion,
-            "persona": persona,
-        }
-    except (URLError, TimeoutError, ValueError):
-        return {
-            "provider": "mvp-fallback",
-            "audio_b64": "",
-            "emotion": emotion,
-            "persona": persona,
-            "note": "Yandex SpeechKit временно недоступен",
-        }
+    # Public no-key fallback API (Google Translate TTS endpoint).
+    public_text = " ".join(text.split())[:240]
+    if public_text:
+        public_url = (
+            "https://translate.googleapis.com/translate_tts"
+            f"?ie=UTF-8&client=tw-ob&tl=ru&q={quote(public_text)}"
+        )
+        public_req = UrlRequest(public_url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urlopen(public_req, timeout=8) as response:
+                audio = response.read()
+            return {
+                "provider": "google-translate-tts-public",
+                "audio_b64": base64.b64encode(audio).decode("utf-8"),
+                "mime_type": "audio/mpeg",
+                "emotion": emotion,
+                "persona": persona,
+                "note": "Public TTS fallback",
+            }
+        except (URLError, TimeoutError, ValueError):
+            pass
+
+    return {
+        "provider": "mvp-fallback",
+        "audio_b64": "",
+        "emotion": emotion,
+        "persona": persona,
+        "note": "TTS провайдеры временно недоступны",
+    }
+
+
+def stylize_reply_for_persona(reply: str, persona: str) -> str:
+    persona_key = (persona or DEFAULT_VOICE_PERSONA).strip().lower()
+    clean = " ".join(reply.split())
+    if persona_key == "jarvis":
+        return f"Анализ завершён. {clean}"
+    if persona_key == "ironic":
+        return f"Иронично, но по делу: {clean}"
+    if persona_key == "sarcastic":
+        return f"Саркастично замечу: {clean}"
+    return clean
 
 
 def scan_host_ports(host: str, ports: list[int], timeout_seconds: float) -> list[int]:
@@ -2505,6 +2579,20 @@ async def update_config(
     return {"updated": len(updated_keys), "keys": sorted(updated_keys)}
 
 
+@app.post("/api/v1/voice/preview")
+async def voice_preview(
+    payload: VoicePreviewRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    persona = payload.persona.strip().lower()
+    if persona not in VOICE_PERSONAS:
+        raise HTTPException(status_code=400, detail=f"Недопустимая персона. Доступно: {sorted(VOICE_PERSONAS)}")
+    styled = stylize_reply_for_persona(payload.text, persona)
+    emotion = infer_emotion(styled, persona)
+    tts = synthesize_tts(styled, emotion, persona)
+    return {"text": styled, "emotion": emotion, "voice_persona": persona, "tts": tts}
+
+
 @app.websocket("/api/v1/voice/ws")
 async def voice_ws(websocket: WebSocket) -> None:
     token = websocket.query_params.get("token")
@@ -2544,12 +2632,13 @@ async def voice_ws(websocket: WebSocket) -> None:
             with get_connection() as conn:
                 prefs = get_user_preferences(conn, payload["sub"])
                 reply = build_chat_reply(conn, payload["sub"], content)
+            styled_reply = stylize_reply_for_persona(reply, prefs["voice_persona"])
             emotion = infer_emotion(content, prefs["voice_persona"])
-            tts = synthesize_tts(reply, emotion, prefs["voice_persona"])
+            tts = synthesize_tts(styled_reply, emotion, prefs["voice_persona"])
             await websocket.send_json(
                 {
                     "type": "chat_response",
-                    "content": reply,
+                    "content": styled_reply,
                     "emotion": emotion,
                     "voice_persona": prefs["voice_persona"],
                     "tts": tts,

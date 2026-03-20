@@ -152,6 +152,11 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: string
+  emotion?: string
+  voice_persona?: VoicePersona
+  tts_audio_b64?: string
+  tts_provider?: string
+  tts_mime_type?: string
 }
 
 export interface WsMessage {
@@ -164,6 +169,7 @@ export interface WsMessage {
   tts?: {
     provider: string
     audio_b64?: string
+    mime_type?: string
     emotion?: string
     persona?: string
     note?: string
