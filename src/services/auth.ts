@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { User, TokenPair } from '@/types'
+import type { User, TokenPair, UserPreferences, VoicePersona } from '@/types'
 
 export interface TwoFactorSetup {
   qr_code: string
@@ -46,5 +46,15 @@ export const authService = {
 
   async logout(refreshToken: string): Promise<void> {
     await api.post('/auth/logout', { refresh_token: refreshToken })
+  },
+
+  async getPreferences(): Promise<UserPreferences> {
+    const { data } = await api.get<UserPreferences>('/profile/preferences')
+    return data
+  },
+
+  async setVoicePersona(persona: VoicePersona): Promise<UserPreferences> {
+    const { data } = await api.put<UserPreferences>('/profile/preferences/voice', { persona })
+    return data
   },
 }

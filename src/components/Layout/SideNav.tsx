@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Brain, Home, Shield, Users, Cpu,
-  CreditCard, User, LogOut, Lock
+  CreditCard, User, LogOut, Lock, Wrench
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -15,6 +15,7 @@ const NAV = [
   { to: '/home',      icon: Home,            label: 'Умный дом',  feature: null },
   { to: '/autonomy',  icon: Cpu,             label: 'Агенты',     feature: 'agents' },
   { to: '/guardian',  icon: Shield,          label: 'Защита',     feature: null },
+  { to: '/diy',       icon: Wrench,          label: 'DIY Hub',    feature: null },
   { to: '/payments',  icon: CreditCard,      label: 'Подписка',   feature: null },
   { to: '/profile',   icon: User,            label: 'Профиль',    feature: null },
 ]

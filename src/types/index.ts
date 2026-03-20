@@ -10,6 +10,14 @@ export interface User {
   created_at: string
 }
 
+export type VoicePersona = 'calm' | 'ironic' | 'sarcastic' | 'jarvis'
+
+export interface UserPreferences {
+  voice_persona: VoicePersona
+  proactive_enabled: boolean
+  family_mode: boolean
+}
+
 export interface TokenPair {
   access_token: string
   refresh_token: string
@@ -151,4 +159,13 @@ export interface WsMessage {
   content?: string
   status?: string
   task_id?: number
+  emotion?: string
+  voice_persona?: VoicePersona
+  tts?: {
+    provider: string
+    audio_b64?: string
+    emotion?: string
+    persona?: string
+    note?: string
+  }
 }

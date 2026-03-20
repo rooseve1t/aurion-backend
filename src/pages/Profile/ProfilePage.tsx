@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User, Shield, Key, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { authService } from '@/services/auth'
 import { useToast } from '@/hooks/useToast'
 import { formatDate } from '@/utils'
+import type { VoicePersona } from '@/types'
 import styles from './ProfilePage.module.css'
 
 export function ProfilePage() {
@@ -13,6 +14,14 @@ export function ProfilePage() {
   const [qrData, setQrData]    = useState<{ qr_code: string; secret: string } | null>(null)
   const [code2FA, setCode2FA]  = useState('')
   const [loading2FA, setLoading2FA] = useState(false)
+  const [voicePersona, setVoicePersona] = useState<VoicePersona>('calm')
+  const [voiceSaving, setVoiceSaving] = useState(false)
+
+  useEffect(() => {
+    authService.getPreferences()
+      .then((prefs) => setVoicePersona(prefs.voice_persona))
+      .catch(() => undefined)
+  }, [])
 
   const handle2FAEnable = async () => {
     setLoading2FA(true)
@@ -44,6 +53,19 @@ export function ProfilePage() {
       if (user) setUser({ ...user, is_2fa_enabled: false })
       toast.success('2FA отключена')
     } catch { toast.error('Неверный код') }
+  }
+
+  const handleVoicePersonaSave = async () => {
+    setVoiceSaving(true)
+    try {
+      const prefs = await authService.setVoicePersona(voicePersona)
+      setVoicePersona(prefs.voice_persona)
+      toast.success('Характер голоса обновлён')
+    } catch {
+      toast.error('Не удалось сохранить голосовой профиль')
+    } finally {
+      setVoiceSaving(false)
+    }
   }
 
   return (
@@ -106,6 +128,29 @@ export function ProfilePage() {
               </form>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>ГОЛОС JARVIS</div>
+        <div className={styles.secPanel}>
+          <div className={styles.secTitle}>Характер голоса</div>
+          <div className={styles.secSub}>Выбери стиль озвучки для ответов ассистента</div>
+          <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+            <select
+              className="input"
+              value={voicePersona}
+              onChange={(e) => setVoicePersona(e.target.value as VoicePersona)}
+            >
+              <option value="calm">Спокойный</option>
+              <option value="ironic">Ироничный</option>
+              <option value="sarcastic">Саркастичный</option>
+              <option value="jarvis">JARVIS-style</option>
+            </select>
+            <button className="btn btn-cyan" onClick={handleVoicePersonaSave} disabled={voiceSaving}>
+              {voiceSaving ? 'СОХРАНЕНИЕ...' : 'СОХРАНИТЬ'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

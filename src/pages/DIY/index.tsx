@@ -1,0 +1,1 @@
+export { DIYPage } from './DIYPage'

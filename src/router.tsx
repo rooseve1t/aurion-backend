@@ -9,6 +9,7 @@ import { AutonomyPage }  from '@/pages/Autonomy/AutonomyPage'
 import { PaymentsPage }  from '@/pages/Payments/PaymentsPage'
 import { ProfilePage }   from '@/pages/Profile/ProfilePage'
 import { GuardianPage }  from '@/pages/Guardian/GuardianPage'
+import { DIYPage }       from '@/pages/DIY/DIYPage'
 import { HealthPage }    from '@/pages/Stubs/HealthPage'
 import { TwinPage }      from '@/pages/Stubs/TwinPage'
 import { RemindersPage } from '@/pages/Stubs/RemindersPage'
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
       { path: '/payments',  element: <PaymentsPage />  },
       { path: '/profile',   element: <ProfilePage />   },
       { path: '/guardian',  element: <GuardianPage />  },
+      { path: '/diy',       element: <DIYPage />       },
       { path: '/health',    element: <HealthPage />    },
       { path: '/twin',      element: <TwinPage />      },
       { path: '/reminders', element: <RemindersPage /> },

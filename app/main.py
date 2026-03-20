@@ -6,13 +6,17 @@ import hmac
 import io
 import json
 import os
+import re
 import secrets
+import socket
 import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
+from urllib.error import URLError
 from urllib.parse import parse_qs, quote
+from urllib.request import Request as UrlRequest, urlopen
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
@@ -30,10 +34,35 @@ TWO_FACTOR_CHALLENGE_TTL_MINUTES = int(os.getenv("AURION_2FA_CHALLENGE_TTL_MINUT
 DEMO_EMAIL = "demo@aurionai.ru"
 DEMO_PASSWORD = "Demo1234!"
 DEMO_USERNAME = "demo"
+RUNTIME_CONFIG_FILE = BASE_DIR / "data" / "runtime_config.json"
 CREATOR_EMAILS = {
     item.strip().lower()
     for item in os.getenv("AURION_CREATOR_EMAILS", "martinleterier@mail.ru").split(",")
     if item.strip()
+}
+DEFAULT_VOICE_PERSONA = "calm"
+VOICE_PERSONAS = {"calm", "ironic", "sarcastic", "jarvis"}
+RUNTIME_CONFIG_KEYS = {
+    "QUANTUM_RINGS_TOKEN",
+    "YANDEX_FOLDER_ID",
+    "YANDEX_API_KEY",
+    "CENSYS_API_ID",
+    "CENSYS_API_SECRET",
+    "SHODAN_API_KEY",
+    "APIFY_API_TOKEN",
+    "YOOKASSA_SHOP_ID",
+    "YOOKASSA_SECRET_KEY",
+    "GOOGLE_FIT_CLIENT_ID",
+    "GOOGLE_FIT_CLIENT_SECRET",
+    "REPLICATE_API_TOKEN",
+    "HUGGINGFACE_API_TOKEN",
+    "ELEVENLABS_API_KEY",
+    "PLANET_API_KEY",
+    "REDIS_URL",
+    "DATABASE_URL",
+    "HPC_UNICORE_URL",
+    "HPC_UNICORE_USER",
+    "HPC_UNICORE_PASSWORD",
 }
 
 DEFAULT_TARIFFS = [
@@ -184,6 +213,47 @@ class SubscribeRequest(BaseModel):
     save_payment_method: bool = True
 
 
+class VoicePreferencesUpdateRequest(BaseModel):
+    persona: str = Field(default=DEFAULT_VOICE_PERSONA)
+
+
+class ProactiveGenerateRequest(BaseModel):
+    lookback_days: int = Field(default=30, ge=7, le=180)
+
+
+class VoiceProfileEnrollRequest(BaseModel):
+    profile_name: str = Field(min_length=2, max_length=64)
+    audio_sample_b64: str = Field(min_length=20)
+
+
+class VoiceIdentifyRequest(BaseModel):
+    audio_sample_b64: str = Field(min_length=20)
+
+
+class DIYSketchUploadRequest(BaseModel):
+    name: str
+    device_type: str
+    board: str = "ESP8266"
+    sketch_code: str = Field(min_length=10)
+    protocol: str = "mqtt"
+
+
+class QuantumRouteRequest(BaseModel):
+    task_type: str = "optimization"
+    payload: dict[str, Any] = Field(default_factory=dict)
+    preferred_backend: str = "auto"
+
+
+class GuardianScanRequest(BaseModel):
+    hosts: list[str] = Field(default_factory=lambda: ["192.168.1.1", "192.168.1.100"])
+    ports: list[int] = Field(default_factory=lambda: [22, 80, 443, 1883, 3306, 5432])
+    timeout_seconds: float = Field(default=0.2, ge=0.05, le=2.0)
+
+
+class ConfigUpdateRequest(BaseModel):
+    updates: dict[str, str] = Field(default_factory=dict)
+
+
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -226,6 +296,62 @@ def json_loads(value: Optional[str], default: Any) -> Any:
     if not value:
         return default
     return json.loads(value)
+
+
+def load_runtime_config() -> dict[str, str]:
+    config: dict[str, str] = {}
+    for key in RUNTIME_CONFIG_KEYS:
+        value = os.getenv(key, "").strip()
+        if value:
+            config[key] = value
+    if RUNTIME_CONFIG_FILE.exists():
+        try:
+            raw = json.loads(RUNTIME_CONFIG_FILE.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                for key, value in raw.items():
+                    if key in RUNTIME_CONFIG_KEYS and isinstance(value, str) and value.strip():
+                        config[key] = value.strip()
+        except (OSError, json.JSONDecodeError):
+            pass
+    return config
+
+
+def save_runtime_config(config: dict[str, str]) -> None:
+    ensure_parent_dir(RUNTIME_CONFIG_FILE)
+    RUNTIME_CONFIG_FILE.write_text(
+        json.dumps(config, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+RUNTIME_CONFIG: dict[str, str] = load_runtime_config()
+
+
+def config_get(key: str, default: str = "") -> str:
+    return (RUNTIME_CONFIG.get(key) or os.getenv(key) or default).strip()
+
+
+def mask_secret(value: str) -> str:
+    if len(value) <= 6:
+        return "*" * len(value)
+    return f"{value[:3]}***{value[-3:]}"
+
+
+def infer_emotion(content: str, persona: str) -> str:
+    lowered = content.lower()
+    if persona in {"ironic", "sarcastic"}:
+        return persona
+    if any(token in lowered for token in ["срочно", "тревога", "ошибка", "panic"]):
+        return "calm"
+    if any(token in lowered for token in ["лол", "шут", "ирони", "сарказ"]):
+        return "ironic"
+    return "calm"
+
+
+def voice_fingerprint(audio_sample_b64: str) -> str:
+    raw = audio_sample_b64.strip().encode("utf-8")
+    normalized = re.sub(rb"[^a-zA-Z0-9+/=]", b"", raw)
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def b64url_encode(raw: bytes) -> str:
@@ -631,6 +757,47 @@ def create_schema() -> None:
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY(account_id) REFERENCES finance_accounts(id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id TEXT PRIMARY KEY,
+                voice_persona TEXT NOT NULL DEFAULT 'calm',
+                proactive_enabled INTEGER NOT NULL DEFAULT 1,
+                family_mode INTEGER NOT NULL DEFAULT 1,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS voice_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                profile_name TEXT NOT NULL,
+                fingerprint TEXT NOT NULL,
+                provider TEXT NOT NULL DEFAULT 'mvp-hash',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS proactive_suggestions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                message TEXT NOT NULL,
+                confidence REAL NOT NULL DEFAULT 0.5,
+                source TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS diy_sketches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                device_type TEXT NOT NULL,
+                board TEXT NOT NULL,
+                protocol TEXT NOT NULL,
+                sketch_code TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
             """
         )
         conn.commit()
@@ -750,6 +917,18 @@ def ensure_free_subscription(conn: sqlite3.Connection, user_id: str) -> None:
 
 def ensure_seeded_workspace(conn: sqlite3.Connection, user_id: str) -> None:
     ensure_free_subscription(conn, user_id)
+    pref_row = conn.execute(
+        "SELECT user_id FROM user_preferences WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+    if not pref_row:
+        conn.execute(
+            """
+            INSERT INTO user_preferences (user_id, voice_persona, proactive_enabled, family_mode, updated_at)
+            VALUES (?, ?, 1, 1, ?)
+            """,
+            (user_id, DEFAULT_VOICE_PERSONA, iso_now()),
+        )
 
     device_count = conn.execute("SELECT COUNT(*) FROM devices WHERE user_id = ?", (user_id,)).fetchone()[0]
     if device_count == 0:
@@ -1020,6 +1199,185 @@ def build_chat_reply(conn: sqlite3.Connection, user_id: str, message: str) -> st
         "Я уже работаю как живой MVP: умею хранить память, показывать статус дома, "
         "вести базовые задачи агентов и обслуживать регистрацию с 2FA."
     )
+
+
+def get_user_preferences(conn: sqlite3.Connection, user_id: str) -> dict[str, Any]:
+    row = conn.execute(
+        "SELECT * FROM user_preferences WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+    if not row:
+        ensure_seeded_workspace(conn, user_id)
+        row = conn.execute(
+            "SELECT * FROM user_preferences WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+    return {
+        "voice_persona": row["voice_persona"] if row else DEFAULT_VOICE_PERSONA,
+        "proactive_enabled": bool(row["proactive_enabled"]) if row else True,
+        "family_mode": bool(row["family_mode"]) if row else True,
+    }
+
+
+def update_user_preferences(conn: sqlite3.Connection, user_id: str, voice_persona: str) -> dict[str, Any]:
+    persona = voice_persona.strip().lower()
+    if persona not in VOICE_PERSONAS:
+        raise HTTPException(status_code=400, detail=f"Недопустимая персона. Доступно: {sorted(VOICE_PERSONAS)}")
+    conn.execute(
+        """
+        INSERT INTO user_preferences (user_id, voice_persona, proactive_enabled, family_mode, updated_at)
+        VALUES (?, ?, 1, 1, ?)
+        ON CONFLICT(user_id) DO UPDATE SET voice_persona = excluded.voice_persona, updated_at = excluded.updated_at
+        """,
+        (user_id, persona, iso_now()),
+    )
+    conn.commit()
+    return get_user_preferences(conn, user_id)
+
+
+def generate_proactive_suggestions(conn: sqlite3.Connection, user_id: str, lookback_days: int = 30) -> list[dict[str, Any]]:
+    since = to_iso(utc_now() - timedelta(days=lookback_days))
+    memory_rows = conn.execute(
+        """
+        SELECT content, tags
+        FROM memory_entries
+        WHERE user_id = ? AND datetime(created_at) >= datetime(?)
+        ORDER BY importance DESC, datetime(created_at) DESC
+        """,
+        (user_id, since),
+    ).fetchall()
+    task_rows = conn.execute(
+        """
+        SELECT action, parameters, created_at
+        FROM agent_tasks
+        WHERE user_id = ? AND datetime(created_at) >= datetime(?)
+        ORDER BY datetime(created_at) DESC
+        """,
+        (user_id, since),
+    ).fetchall()
+
+    suggestions: list[tuple[str, float, str]] = []
+    joined_memory = " ".join((row["content"] or "").lower() for row in memory_rows)
+    weekday = datetime.now().weekday()
+    if weekday == 4 and any(token in joined_memory for token in ["пятниц", "pizza", "пицц"]):
+        suggestions.append(("Вы обычно заказываете пиццу по пятницам. Повторить заказ?", 0.86, "habit:friday_pizza"))
+    if any(token in joined_memory for token in ["финанс", "бюджет", "расход"]):
+        suggestions.append(("Пятничный финобзор готов. Запустить короткий анализ расходов?", 0.81, "habit:finance_review"))
+    if any(row["action"] in {"weekly_review", "analyze_spending"} for row in task_rows):
+        suggestions.append(("Обнаружен стабильный финансовый ритм. Включить авто-еженедельный отчёт?", 0.77, "agent:recurring_task"))
+    if any(token in joined_memory for token in ["свет", "гостиная", "вечер"]):
+        suggestions.append(("Вечерний сценарий света можно запускать автоматически в 21:00. Включить?", 0.73, "smarthome:evening_scene"))
+    if not suggestions:
+        suggestions.append(("Пока мало данных для уверенной проактивности. Сохраняйте заметки в Память для персонализации.", 0.4, "cold_start"))
+
+    payload: list[dict[str, Any]] = []
+    for message, confidence, source in suggestions[:5]:
+        conn.execute(
+            """
+            INSERT INTO proactive_suggestions (user_id, message, confidence, source, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (user_id, message, confidence, source, iso_now()),
+        )
+        payload.append({"message": message, "confidence": round(confidence, 2), "source": source})
+    conn.commit()
+    return payload
+
+
+def synthesize_tts(text: str, emotion: str, persona: str) -> dict[str, Any]:
+    api_key = config_get("YANDEX_API_KEY")
+    folder_id = config_get("YANDEX_FOLDER_ID")
+    if not api_key or not folder_id:
+        return {
+            "provider": "mvp-fallback",
+            "audio_b64": "",
+            "emotion": emotion,
+            "persona": persona,
+            "note": "YANDEX_API_KEY / YANDEX_FOLDER_ID не заданы",
+        }
+
+    payload = json.dumps(
+        {
+            "text": text,
+            "lang": "ru-RU",
+            "voice": "jane",
+            "folderId": folder_id,
+            "format": "lpcm",
+            "sampleRateHertz": 48000,
+            "emotion": "good" if emotion in {"calm", "ironic"} else "evil",
+        }
+    ).encode("utf-8")
+    req = UrlRequest(
+        "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize",
+        data=payload,
+        headers={
+            "Authorization": f"Api-Key {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=8) as response:
+            audio = response.read()
+        return {
+            "provider": "yandex-speechkit",
+            "audio_b64": base64.b64encode(audio).decode("utf-8"),
+            "emotion": emotion,
+            "persona": persona,
+        }
+    except (URLError, TimeoutError, ValueError):
+        return {
+            "provider": "mvp-fallback",
+            "audio_b64": "",
+            "emotion": emotion,
+            "persona": persona,
+            "note": "Yandex SpeechKit временно недоступен",
+        }
+
+
+def scan_host_ports(host: str, ports: list[int], timeout_seconds: float) -> list[int]:
+    open_ports: list[int] = []
+    for port in ports[:32]:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout_seconds)
+        try:
+            if sock.connect_ex((host, port)) == 0:
+                open_ports.append(port)
+        except OSError:
+            pass
+        finally:
+            sock.close()
+    return open_ports
+
+
+def check_redis_connection() -> dict[str, Any]:
+    redis_url = config_get("REDIS_URL")
+    if not redis_url:
+        return {"enabled": False, "status": "not_configured"}
+    try:
+        import redis
+
+        client = redis.Redis.from_url(redis_url, socket_timeout=1.5)
+        pong = client.ping()
+        return {"enabled": True, "status": "ok" if pong else "error"}
+    except Exception as exc:
+        return {"enabled": True, "status": "error", "error": str(exc)}
+
+
+def check_postgres_connection() -> dict[str, Any]:
+    database_url = config_get("DATABASE_URL")
+    if not database_url:
+        return {"enabled": False, "status": "not_configured"}
+    try:
+        import psycopg
+
+        with psycopg.connect(database_url, connect_timeout=2) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                _ = cur.fetchone()
+        return {"enabled": True, "status": "ok"}
+    except Exception as exc:
+        return {"enabled": True, "status": "error", "error": str(exc)}
 
 
 async def parse_request_payload(request: Request) -> dict[str, Any]:
@@ -1301,6 +1659,15 @@ async def system_stats(current_user: dict[str, Any] = Depends(get_current_user))
             "subscription_tier": subscription["tariff"]["name"] if subscription and subscription.get("tariff") else "Free",
             "uptime_hours": max(int((time.time() - APP_STARTED_AT) // 3600), 0),
         }
+
+
+@app.get("/api/v1/system/integrations")
+async def system_integrations(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    return {
+        "postgres": check_postgres_connection(),
+        "redis": check_redis_connection(),
+        "database_engine": "sqlite (core) + optional postgres/redis integrations",
+    }
 
 
 @app.get("/api/v1/memory/search")
@@ -1872,6 +2239,272 @@ async def finance_tips(current_user: dict[str, Any] = Depends(get_current_user))
     ]
 
 
+@app.get("/api/v1/profile/preferences")
+async def profile_preferences(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    with get_connection() as conn:
+        return get_user_preferences(conn, current_user["id"])
+
+
+@app.put("/api/v1/profile/preferences/voice")
+async def update_voice_preferences(
+    payload: VoicePreferencesUpdateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    with get_connection() as conn:
+        return update_user_preferences(conn, current_user["id"], payload.persona)
+
+
+@app.post("/api/v1/voice/profiles/enroll")
+async def enroll_voice_profile(
+    payload: VoiceProfileEnrollRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    fingerprint = voice_fingerprint(payload.audio_sample_b64)
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO voice_profiles (user_id, profile_name, fingerprint, provider, created_at)
+            VALUES (?, ?, ?, 'mvp-hash', ?)
+            """,
+            (current_user["id"], payload.profile_name.strip(), fingerprint, iso_now()),
+        )
+        voice_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.commit()
+        return {"id": voice_id, "profile_name": payload.profile_name.strip(), "provider": "mvp-hash"}
+
+
+@app.post("/api/v1/voice/profiles/identify")
+async def identify_voice_profile(
+    payload: VoiceIdentifyRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    target = voice_fingerprint(payload.audio_sample_b64)
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM voice_profiles WHERE user_id = ? ORDER BY id ASC",
+            (current_user["id"],),
+        ).fetchall()
+        if not rows:
+            return {"matched": False, "reason": "Нет сохранённых голосовых профилей"}
+        best = None
+        for row in rows:
+            score = sum(1 for a, b in zip(target, row["fingerprint"]) if a == b) / max(len(target), 1)
+            if best is None or score > best["score"]:
+                best = {"score": score, "profile_name": row["profile_name"], "id": row["id"]}
+        return {
+            "matched": bool(best and best["score"] > 0.7),
+            "confidence": round(best["score"], 3) if best else 0.0,
+            "profile_name": best["profile_name"] if best else None,
+            "profile_id": best["id"] if best else None,
+            "provider": "mvp-hash",
+        }
+
+
+@app.post("/api/v1/proactive/generate")
+async def generate_proactive(
+    payload: ProactiveGenerateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    with get_connection() as conn:
+        prefs = get_user_preferences(conn, current_user["id"])
+        if not prefs.get("proactive_enabled", True):
+            return {"generated": 0, "suggestions": []}
+        suggestions = generate_proactive_suggestions(conn, current_user["id"], payload.lookback_days)
+        return {"generated": len(suggestions), "suggestions": suggestions}
+
+
+@app.get("/api/v1/proactive/suggestions")
+async def list_proactive_suggestions(current_user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM proactive_suggestions
+            WHERE user_id = ?
+            ORDER BY datetime(created_at) DESC, id DESC
+            LIMIT 20
+            """,
+            (current_user["id"],),
+        ).fetchall()
+        return [
+            {
+                "id": row["id"],
+                "message": row["message"],
+                "confidence": round(float(row["confidence"]), 2),
+                "source": row["source"],
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
+
+@app.get("/api/v1/diy/instructions")
+async def diy_instructions(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    mqtt_host = config_get("MQTT_HOST", "mqtt://broker.hivemq.com")
+    return {
+        "quickstart": [
+            "Подключите ESP8266/Arduino к Wi-Fi.",
+            "Настройте MQTT клиент и топик aurion/{user_id}/devices/{device}.",
+            "Отправляйте JSON-стейт устройства каждые 15-60 секунд.",
+        ],
+        "mqtt_host": mqtt_host,
+        "example_topics": [
+            f"aurion/{current_user['id']}/devices/kitchen-light/state",
+            f"aurion/{current_user['id']}/devices/door-sensor/events",
+        ],
+        "sample_payload": {"power": True, "temperature": 22, "humidity": 45},
+    }
+
+
+@app.post("/api/v1/diy/sketches")
+async def upload_diy_sketch(
+    payload: DIYSketchUploadRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO diy_sketches (user_id, name, device_type, board, protocol, sketch_code, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                current_user["id"],
+                payload.name.strip(),
+                payload.device_type.strip(),
+                payload.board.strip(),
+                payload.protocol.strip(),
+                payload.sketch_code,
+                iso_now(),
+            ),
+        )
+        sketch_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.commit()
+        return {"id": sketch_id, "status": "stored"}
+
+
+@app.get("/api/v1/diy/sketches")
+async def list_diy_sketches(current_user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM diy_sketches WHERE user_id = ? ORDER BY id DESC LIMIT 50",
+            (current_user["id"],),
+        ).fetchall()
+        return [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "device_type": row["device_type"],
+                "board": row["board"],
+                "protocol": row["protocol"],
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
+
+@app.post("/api/v1/quantum/route")
+async def quantum_route(
+    payload: QuantumRouteRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    from app.quantum_router import QuantumRouter
+
+    router = QuantumRouter(
+        quantum_token=config_get("QUANTUM_RINGS_TOKEN"),
+        hpc_url=config_get("HPC_UNICORE_URL"),
+        hpc_user=config_get("HPC_UNICORE_USER"),
+        hpc_password=config_get("HPC_UNICORE_PASSWORD"),
+    )
+    return router.route_task(
+        task_type=payload.task_type,
+        payload=payload.payload,
+        preferred_backend=payload.preferred_backend,
+    )
+
+
+@app.post("/api/v1/guardian/scan")
+async def guardian_scan(
+    payload: GuardianScanRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    hosts = payload.hosts[:16]
+    report: list[dict[str, Any]] = []
+    for host in hosts:
+        open_ports = scan_host_ports(host, payload.ports, payload.timeout_seconds)
+        risks = []
+        if 23 in open_ports:
+            risks.append("Открыт Telnet — высокий риск, выключите доступ.")
+        if 1883 in open_ports:
+            risks.append("MQTT без TLS: рекомендуется 8883 + авторизация.")
+        if 5432 in open_ports or 3306 in open_ports:
+            risks.append("Порт БД открыт в LAN/наружу, ограничьте firewall по IP.")
+        report.append(
+            {
+                "host": host,
+                "open_ports": open_ports,
+                "risks": risks,
+                "score": max(0, 100 - len(risks) * 20 - len(open_ports) * 2),
+            }
+        )
+    return {
+        "scanned_hosts": len(report),
+        "report": report,
+        "recommendations": [
+            "Выключить UPnP на роутере, если не используете.",
+            "Включить WPA2/WPA3 и сложный пароль Wi-Fi.",
+            "Ограничить доступ к панели роутера только из локальной сети.",
+        ],
+    }
+
+
+@app.get("/api/v1/guardian/router-audit")
+async def guardian_router_audit(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    return {
+        "checks": [
+            {"item": "WPS", "status": "warning", "message": "Рекомендуется отключить WPS."},
+            {"item": "UPnP", "status": "warning", "message": "Отключите UPnP, если нет строгой необходимости."},
+            {"item": "Admin password", "status": "ok", "message": "Похоже, пароль изменён с заводского."},
+            {"item": "Remote admin", "status": "warning", "message": "Ограничьте удалённый админ-доступ по IP."},
+        ]
+    }
+
+
+@app.get("/api/v1/config")
+async def config_snapshot(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if current_user["role"] not in {"creator", "admin"}:
+        raise HTTPException(status_code=403, detail="Только создатель или администратор")
+    visible = {}
+    for key in sorted(RUNTIME_CONFIG_KEYS):
+        value = config_get(key)
+        if value:
+            visible[key] = mask_secret(value)
+    return {"keys": visible, "updated_at": iso_now()}
+
+
+@app.post("/api/v1/config/update")
+async def update_config(
+    payload: ConfigUpdateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    if current_user["role"] not in {"creator", "admin"}:
+        raise HTTPException(status_code=403, detail="Только создатель или администратор")
+    if not payload.updates:
+        return {"updated": 0, "keys": []}
+
+    updated_keys: list[str] = []
+    for key, value in payload.updates.items():
+        if key not in RUNTIME_CONFIG_KEYS:
+            continue
+        normalized = str(value).strip()
+        if normalized:
+            RUNTIME_CONFIG[key] = normalized
+            updated_keys.append(key)
+        elif key in RUNTIME_CONFIG:
+            del RUNTIME_CONFIG[key]
+            updated_keys.append(key)
+    save_runtime_config(RUNTIME_CONFIG)
+    return {"updated": len(updated_keys), "keys": sorted(updated_keys)}
+
+
 @app.websocket("/api/v1/voice/ws")
 async def voice_ws(websocket: WebSocket) -> None:
     token = websocket.query_params.get("token")
@@ -1886,10 +2519,12 @@ async def voice_ws(websocket: WebSocket) -> None:
         if not user_row:
             await websocket.close(code=4404)
             return
+        prefs = get_user_preferences(conn, user_row["id"])
         await websocket.send_json(
             {
                 "type": "chat_response",
                 "content": f"Привет, {user_row['username']}. Я онлайн и готов помочь.",
+                "voice_persona": prefs["voice_persona"],
             }
         )
 
@@ -1907,7 +2542,18 @@ async def voice_ws(websocket: WebSocket) -> None:
                 continue
 
             with get_connection() as conn:
+                prefs = get_user_preferences(conn, payload["sub"])
                 reply = build_chat_reply(conn, payload["sub"], content)
-            await websocket.send_json({"type": "chat_response", "content": reply})
+            emotion = infer_emotion(content, prefs["voice_persona"])
+            tts = synthesize_tts(reply, emotion, prefs["voice_persona"])
+            await websocket.send_json(
+                {
+                    "type": "chat_response",
+                    "content": reply,
+                    "emotion": emotion,
+                    "voice_persona": prefs["voice_persona"],
+                    "tts": tts,
+                }
+            )
     except WebSocketDisconnect:
         return
