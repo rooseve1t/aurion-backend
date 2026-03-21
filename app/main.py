@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import ipaddress
 import io
 import json
 import os
@@ -10,10 +11,12 @@ import re
 import secrets
 import socket
 import sqlite3
+import threading
 import time
+from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union, cast
 from urllib.error import URLError
 from urllib.parse import parse_qs, quote
 from urllib.request import Request as UrlRequest, urlopen
@@ -27,7 +30,7 @@ from pydantic import BaseModel, Field
 APP_STARTED_AT = time.time()
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.getenv("AURION_DB_PATH", str(BASE_DIR / "data" / "aurion.db")))
-SECRET_KEY = os.getenv("AURION_SECRET_KEY", "aurion-dev-secret-change-me")
+SECRET_KEY = os.getenv("AURION_SECRET_KEY", "")
 ACCESS_TOKEN_TTL_MINUTES = int(os.getenv("AURION_ACCESS_TOKEN_TTL_MINUTES", "60"))
 REFRESH_TOKEN_TTL_DAYS = int(os.getenv("AURION_REFRESH_TOKEN_TTL_DAYS", "30"))
 TWO_FACTOR_CHALLENGE_TTL_MINUTES = int(os.getenv("AURION_2FA_CHALLENGE_TTL_MINUTES", "10"))
@@ -37,7 +40,7 @@ DEMO_USERNAME = "demo"
 RUNTIME_CONFIG_FILE = BASE_DIR / "data" / "runtime_config.json"
 FOUNDER_EMAIL = os.getenv("AURION_FOUNDER_EMAIL", "martinleterier@mail.ru").strip().lower()
 FOUNDER_USERNAME = os.getenv("AURION_FOUNDER_USERNAME", "ceo.martin").strip()
-FOUNDER_PASSWORD = os.getenv("AURION_FOUNDER_PASSWORD", "71759402")
+FOUNDER_PASSWORD = os.getenv("AURION_FOUNDER_PASSWORD", "")
 CREATOR_EMAILS = {
     item.strip().lower()
     for item in os.getenv("AURION_CREATOR_EMAILS", "martinleterier@mail.ru").split(",")
@@ -45,6 +48,18 @@ CREATOR_EMAILS = {
 }
 DEFAULT_VOICE_PERSONA = "calm"
 VOICE_PERSONAS = {"calm", "ironic", "sarcastic", "jarvis"}
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+USERNAME_PATTERN = re.compile(r"^[\w.-]{3,64}$", re.UNICODE)
+LOGIN_RATE_LIMIT_ATTEMPTS = int(os.getenv("AURION_LOGIN_RATE_LIMIT_ATTEMPTS", "8"))
+LOGIN_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("AURION_LOGIN_RATE_LIMIT_WINDOW_SECONDS", "300"))
+LOGIN_RATE_LIMIT_BLOCK_SECONDS = int(os.getenv("AURION_LOGIN_RATE_LIMIT_BLOCK_SECONDS", "600"))
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://aurionai.ru",
+    "https://www.aurionai.ru",
+    "https://aurion-backend-production.up.railway.app",
+]
 RUNTIME_CONFIG_KEYS = {
     "QUANTUM_RINGS_TOKEN",
     "YANDEX_FOLDER_ID",
@@ -67,6 +82,10 @@ RUNTIME_CONFIG_KEYS = {
     "HPC_UNICORE_USER",
     "HPC_UNICORE_PASSWORD",
 }
+
+LOGIN_ATTEMPTS: dict[str, deque[float]] = defaultdict(deque)
+LOGIN_BLOCKED_UNTIL: dict[str, float] = {}
+LOGIN_RATE_LIMIT_LOCK = threading.Lock()
 
 DEFAULT_TARIFFS = [
     {
@@ -155,6 +174,46 @@ DEFAULT_TRANSACTIONS = [
     (-3200.0, "Транспорт", "Такси и каршеринг"),
     (95000.0, "Доход", "Основной доход"),
 ]
+
+DEFAULT_REMINDERS = [
+    ("Пятничный обзор системы", "Проверить финансы, память и активные сценарии дома.", 1, "high", "pending"),
+    ("Голосовой тест JARVIS", "Прогнать preview голоса и убедиться, что озвучка стабильна.", 2, "medium", "pending"),
+    ("Резервная копия проекта", "Сделать экспорт критичных данных и сверить доменные записи.", 5, "medium", "completed"),
+]
+
+DEFAULT_SOCIAL_POSTS = [
+    (
+        "Aurion Core",
+        "Новая сборка улучшила стабильность авторизации и удержание сессии на мобильных устройствах.",
+        "release",
+        "focus",
+        {"boost": 12, "signal": 5},
+    ),
+    (
+        "Guardian Lab",
+        "Рекомендуем пройти быстрый аудит роутера и локальной сети после подключения новых устройств.",
+        "security",
+        "warning",
+        {"boost": 8, "signal": 3},
+    ),
+]
+
+DEFAULT_MEDIA_ITEMS = [
+    ("Фокус-плейлист утра", "playlist", "focus", 45, "queued", "Спокойный плейлист для старта дня и рабочих задач."),
+    ("Вечерний ambient", "music", "calm", 60, "active", "Фоновая музыка для приглушённого света и плавного режима."),
+    ("Домашний брифинг", "briefing", "insight", 8, "queued", "Короткая аудио-сводка по задачам, финансам и дому."),
+]
+
+DEFAULT_HEALTH_CONNECTIONS = [
+    ("google_fit", "demo"),
+    ("fitbit", "available"),
+]
+
+REMINDER_STATUSES = {"pending", "completed", "archived"}
+REMINDER_PRIORITIES = {"low", "medium", "high"}
+MEDIA_ITEM_TYPES = {"playlist", "music", "briefing", "video"}
+MEDIA_ITEM_STATUSES = {"queued", "active", "completed", "paused"}
+SOCIAL_MOODS = {"focus", "warning", "insight", "calm"}
 
 
 class RegisterData(BaseModel):
@@ -262,6 +321,42 @@ class VoicePreviewRequest(BaseModel):
     persona: str = Field(default=DEFAULT_VOICE_PERSONA)
 
 
+class ReminderCreateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=120)
+    note: str = Field(default="", max_length=1000)
+    due_at: Optional[str] = None
+    priority: str = Field(default="medium")
+
+
+class ReminderUpdateRequest(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=2, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=1000)
+    due_at: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+
+
+class SocialPostCreateRequest(BaseModel):
+    content: str = Field(min_length=2, max_length=500)
+    mood: str = Field(default="insight")
+
+
+class MediaItemCreateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=120)
+    media_type: str = Field(default="playlist")
+    mood: str = Field(default="focus")
+    duration_minutes: int = Field(default=30, ge=1, le=600)
+    description: str = Field(default="", max_length=500)
+
+
+class MediaItemUpdateRequest(BaseModel):
+    status: str = Field(default="queued")
+
+
+class HealthConnectRequest(BaseModel):
+    provider: str = Field(default="google_fit")
+
+
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -337,6 +432,107 @@ RUNTIME_CONFIG: dict[str, str] = load_runtime_config()
 
 def config_get(key: str, default: str = "") -> str:
     return (RUNTIME_CONFIG.get(key) or os.getenv(key) or default).strip()
+
+
+def normalize_email(value: str) -> str:
+    return value.strip().lower()
+
+
+def is_creator_login(login_value: str) -> bool:
+    lowered = login_value.strip().lower()
+    return lowered in CREATOR_EMAILS or lowered == FOUNDER_USERNAME.strip().lower() or lowered == FOUNDER_EMAIL
+
+
+def validate_register_payload(email: str, username: str, password: str) -> None:
+    if not SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Серверная ошибка: не настроен SECRET_KEY")
+    
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Неверный формат email")
+    
+    if not USERNAME_PATTERN.match(username):
+        raise HTTPException(status_code=400, detail="Имя пользователя должно содержать 3-64 символа (буквы, цифры, _, .)")
+    
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Пароль должен содержать минимум 8 символов")
+
+
+def parse_optional_iso(value: Optional[str], field_name: str) -> Optional[str]:
+    normalized = (value or "").strip()
+    if not normalized:
+        return None
+    parsed = from_iso(normalized)
+    if parsed is not None:
+        return to_iso(parsed)
+    try:
+        return to_iso(datetime.fromisoformat(normalized).astimezone(timezone.utc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Некорректная дата для {field_name}") from exc
+
+
+def normalize_choice(value: str, allowed: set[str], field_name: str) -> str:
+    normalized = value.strip().lower()
+    if normalized not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недопустимое значение для {field_name}. Доступно: {sorted(allowed)}",
+        )
+    return normalized
+
+
+def get_client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        candidate = forwarded_for.split(",")[0].strip()
+        if candidate:
+            return candidate
+    real_ip = request.headers.get("x-real-ip", "").strip()
+    if real_ip:
+        return real_ip
+    return request.client.host if request.client else "unknown"
+
+
+def login_rate_limit_key(login_value: str, request: Request) -> str:
+    return f"{login_value.lower()}|{get_client_ip(request)}"
+
+
+def is_login_rate_limited(key: str, now_ts: Optional[float] = None) -> bool:
+    ts = now_ts or time.time()
+    with LOGIN_RATE_LIMIT_LOCK:
+        blocked_until = LOGIN_BLOCKED_UNTIL.get(key, 0)
+        if blocked_until > ts:
+            return True
+        if blocked_until:
+            LOGIN_BLOCKED_UNTIL.pop(key, None)
+
+        attempts = LOGIN_ATTEMPTS.get(key)
+        if not attempts:
+            return False
+        while attempts and ts - attempts[0] > LOGIN_RATE_LIMIT_WINDOW_SECONDS:
+            attempts.popleft()
+        if len(attempts) >= LOGIN_RATE_LIMIT_ATTEMPTS:
+            LOGIN_BLOCKED_UNTIL[key] = ts + LOGIN_RATE_LIMIT_BLOCK_SECONDS
+            attempts.clear()
+            return True
+        return False
+
+
+def record_login_failure(key: str, now_ts: Optional[float] = None) -> None:
+    ts = now_ts or time.time()
+    with LOGIN_RATE_LIMIT_LOCK:
+        attempts = LOGIN_ATTEMPTS[key]
+        attempts.append(ts)
+        while attempts and ts - attempts[0] > LOGIN_RATE_LIMIT_WINDOW_SECONDS:
+            attempts.popleft()
+        if len(attempts) >= LOGIN_RATE_LIMIT_ATTEMPTS:
+            LOGIN_BLOCKED_UNTIL[key] = ts + LOGIN_RATE_LIMIT_BLOCK_SECONDS
+            attempts.clear()
+
+
+def clear_login_failures(key: str) -> None:
+    with LOGIN_RATE_LIMIT_LOCK:
+        LOGIN_ATTEMPTS.pop(key, None)
+        LOGIN_BLOCKED_UNTIL.pop(key, None)
 
 
 def mask_secret(value: str) -> str:
@@ -457,7 +653,7 @@ def verify_totp(secret: str, code: str, window: int = 1) -> bool:
 
 def make_qr_data_url(payload: str) -> str:
     try:
-        import qrcode
+        import qrcode  # type: ignore[import-untyped]
     except ImportError:
         svg = (
             "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'>"
@@ -618,6 +814,57 @@ def serialize_transaction(row: sqlite3.Row) -> dict[str, Any]:
         "description": row["description"],
         "date": row["date"],
         "type": row["type"],
+    }
+
+
+def serialize_reminder(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "note": row["note"],
+        "due_at": row["due_at"],
+        "priority": row["priority"],
+        "status": row["status"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }
+
+
+def serialize_health_connection(row: sqlite3.Row) -> dict[str, Any]:
+    metrics = json_loads(row["metrics"], {})
+    return {
+        "id": row["id"],
+        "provider": row["provider"],
+        "status": row["status"],
+        "last_sync_at": row["last_sync_at"],
+        "metrics": metrics,
+        "updated_at": row["updated_at"],
+    }
+
+
+def serialize_social_post(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "author_name": row["author_name"],
+        "content": row["content"],
+        "source": row["source"],
+        "mood": row["mood"],
+        "reactions": json_loads(row["reactions"], {}),
+        "created_at": row["created_at"],
+    }
+
+
+def serialize_media_item(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "media_type": row["media_type"],
+        "mood": row["mood"],
+        "duration_minutes": row["duration_minutes"],
+        "status": row["status"],
+        "description": row["description"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
     }
 
 
@@ -806,6 +1053,78 @@ def create_schema() -> None:
                 created_at TEXT NOT NULL,
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS reminders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                note TEXT NOT NULL DEFAULT '',
+                due_at TEXT,
+                priority TEXT NOT NULL DEFAULT 'medium',
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS health_connections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                status TEXT NOT NULL,
+                encrypted_token TEXT NOT NULL DEFAULT '',
+                last_sync_at TEXT,
+                metrics TEXT NOT NULL DEFAULT '{}',
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE(user_id, provider)
+            );
+
+            CREATE TABLE IF NOT EXISTS social_posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                author_name TEXT NOT NULL,
+                content TEXT NOT NULL,
+                source TEXT NOT NULL,
+                mood TEXT NOT NULL,
+                reactions TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS media_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                mood TEXT NOT NULL,
+                duration_minutes INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'queued',
+                description TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+            CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_created ON refresh_tokens(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
+            CREATE INDEX IF NOT EXISTS idx_login_challenges_user_expires ON login_challenges(user_id, expires_at);
+            CREATE INDEX IF NOT EXISTS idx_memory_entries_user_created ON memory_entries(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_devices_user_created ON devices(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_agents_user_created ON agents(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_agent_tasks_user_created ON agent_tasks(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_subscriptions_user_created ON subscriptions(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_payments_user_created ON payments(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_transactions_user_account_date ON transactions(user_id, account_id, date);
+            CREATE INDEX IF NOT EXISTS idx_voice_profiles_user_created ON voice_profiles(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_proactive_suggestions_user_created ON proactive_suggestions(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_diy_sketches_user_created ON diy_sketches(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_reminders_user_due ON reminders(user_id, due_at);
+            CREATE INDEX IF NOT EXISTS idx_health_connections_user_provider ON health_connections(user_id, provider);
+            CREATE INDEX IF NOT EXISTS idx_social_posts_user_created ON social_posts(user_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_media_items_user_created ON media_items(user_id, created_at);
             """
         )
         conn.commit()
@@ -821,7 +1140,12 @@ def get_tariff_by_id(conn: sqlite3.Connection, tariff_id: int) -> Optional[sqlit
 
 def seed_reference_data(conn: sqlite3.Connection) -> None:
     for tariff in DEFAULT_TARIFFS:
-        existing = get_tariff_by_name(conn, tariff["name"])
+        name = cast(str, tariff["name"])
+        existing = get_tariff_by_name(conn, name)
+        price = str(tariff["price"])
+        duration_days = int(cast(Union[int, str], tariff["duration_days"]))
+        features = cast(dict[str, Any], tariff["features"])
+        is_active = int(bool(tariff["is_active"]))
         if existing:
             conn.execute(
                 """
@@ -830,10 +1154,10 @@ def seed_reference_data(conn: sqlite3.Connection) -> None:
                 WHERE id = ?
                 """,
                 (
-                    tariff["price"],
-                    tariff["duration_days"],
-                    json_dumps(tariff["features"]),
-                    int(tariff["is_active"]),
+                    price,
+                    duration_days,
+                    json_dumps(features),
+                    is_active,
                     existing["id"],
                 ),
             )
@@ -844,11 +1168,11 @@ def seed_reference_data(conn: sqlite3.Connection) -> None:
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (
-                    tariff["name"],
-                    tariff["price"],
-                    tariff["duration_days"],
-                    json_dumps(tariff["features"]),
-                    int(tariff["is_active"]),
+                    name,
+                    price,
+                    duration_days,
+                    json_dumps(features),
+                    is_active,
                 ),
             )
     conn.commit()
@@ -1029,6 +1353,53 @@ def ensure_seeded_workspace(conn: sqlite3.Connection, user_id: str) -> None:
                     ),
                 )
 
+    reminder_count = conn.execute("SELECT COUNT(*) FROM reminders WHERE user_id = ?", (user_id,)).fetchone()[0]
+    if reminder_count == 0:
+        now = utc_now()
+        for title, note, offset_days, priority, status in DEFAULT_REMINDERS:
+            due_at = to_iso(now + timedelta(days=offset_days))
+            conn.execute(
+                """
+                INSERT INTO reminders (user_id, title, note, due_at, priority, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, title, note, due_at, priority, status, iso_now(), iso_now()),
+            )
+
+    health_count = conn.execute("SELECT COUNT(*) FROM health_connections WHERE user_id = ?", (user_id,)).fetchone()[0]
+    if health_count == 0:
+        now = iso_now()
+        for provider, status in DEFAULT_HEALTH_CONNECTIONS:
+            conn.execute(
+                """
+                INSERT INTO health_connections (user_id, provider, status, encrypted_token, last_sync_at, metrics, updated_at)
+                VALUES (?, ?, ?, '', ?, ?, ?)
+                """,
+                (user_id, provider, status, now, json_dumps(build_health_metrics(user_id, provider)), now),
+            )
+
+    social_count = conn.execute("SELECT COUNT(*) FROM social_posts WHERE user_id = ?", (user_id,)).fetchone()[0]
+    if social_count == 0:
+        for author_name, content, source, mood, reactions in DEFAULT_SOCIAL_POSTS:
+            conn.execute(
+                """
+                INSERT INTO social_posts (user_id, author_name, content, source, mood, reactions, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, author_name, content, source, mood, json_dumps(reactions), iso_now()),
+            )
+
+    media_count = conn.execute("SELECT COUNT(*) FROM media_items WHERE user_id = ?", (user_id,)).fetchone()[0]
+    if media_count == 0:
+        for title, media_type, mood, duration_minutes, status, description in DEFAULT_MEDIA_ITEMS:
+            conn.execute(
+                """
+                INSERT INTO media_items (user_id, title, media_type, mood, duration_minutes, status, description, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, title, media_type, mood, duration_minutes, status, description, iso_now(), iso_now()),
+            )
+
     conn.commit()
 
 
@@ -1092,6 +1463,7 @@ def ensure_founder_user(conn: sqlite3.Connection) -> None:
 def bootstrap() -> None:
     create_schema()
     with get_connection() as conn:
+        cleanup_expired_auth_artifacts(conn)
         seed_reference_data(conn)
         seed_demo_user(conn)
         ensure_founder_user(conn)
@@ -1116,6 +1488,24 @@ def create_auth_pair(conn: sqlite3.Connection, user_row: sqlite3.Row) -> dict[st
     }
 
 
+def cleanup_expired_auth_artifacts(conn: sqlite3.Connection) -> None:
+    now_iso = to_iso(utc_now())
+    revoke_cutoff = to_iso(utc_now() - timedelta(days=7))
+    conn.execute(
+        "DELETE FROM refresh_tokens WHERE datetime(expires_at) <= datetime(?)",
+        (now_iso,),
+    )
+    conn.execute(
+        "DELETE FROM refresh_tokens WHERE revoked_at IS NOT NULL AND datetime(revoked_at) <= datetime(?)",
+        (revoke_cutoff,),
+    )
+    conn.execute(
+        "DELETE FROM login_challenges WHERE datetime(expires_at) <= datetime(?)",
+        (now_iso,),
+    )
+    conn.commit()
+
+
 def revoke_refresh_token(conn: sqlite3.Connection, refresh_token: str) -> None:
     conn.execute(
         "UPDATE refresh_tokens SET revoked_at = ? WHERE token_hash = ? AND revoked_at IS NULL",
@@ -1129,7 +1519,7 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> Dic
         raise HTTPException(status_code=401, detail="Требуется авторизация")
 
     payload = decode_access_token(authorization.split(" ", 1)[1].strip())
-    if not payload:
+    if not payload or "sub" not in payload:
         raise HTTPException(status_code=401, detail="Токен недействителен или истёк")
 
     with get_connection() as conn:
@@ -1196,6 +1586,188 @@ def build_task_result(action: str, parameters: dict[str, Any]) -> dict[str, Any]
         "summary": "Задача выполнена в MVP-режиме.",
         "parameters": parameters,
     }
+
+
+def sample_metric(seed_input: str, minimum: int, maximum: int) -> int:
+    digest = hashlib.sha256(seed_input.encode("utf-8")).digest()
+    spread = max(maximum - minimum, 1)
+    return minimum + int.from_bytes(digest[:4], "big") % (spread + 1)
+
+
+def build_health_metrics(user_id: str, provider: str) -> dict[str, Any]:
+    today_key = utc_now().date().isoformat()
+    return {
+        "steps": sample_metric(f"{user_id}:{provider}:{today_key}:steps", 6400, 12800),
+        "sleep_hours": round(sample_metric(f"{user_id}:{provider}:{today_key}:sleep", 61, 87) / 10, 1),
+        "recovery": sample_metric(f"{user_id}:{provider}:{today_key}:recovery", 68, 96),
+        "hydration_liters": round(sample_metric(f"{user_id}:{provider}:{today_key}:hydration", 16, 29) / 10, 1),
+        "stress_index": sample_metric(f"{user_id}:{provider}:{today_key}:stress", 18, 52),
+    }
+
+
+def upsert_health_connection(
+    conn: sqlite3.Connection,
+    user_id: str,
+    provider: str,
+    status: str,
+    encrypted_token: str = "",
+) -> sqlite3.Row:
+    now = iso_now()
+    metrics = build_health_metrics(user_id, provider)
+    existing = conn.execute(
+        "SELECT * FROM health_connections WHERE user_id = ? AND provider = ?",
+        (user_id, provider),
+    ).fetchone()
+    if existing:
+        conn.execute(
+            """
+            UPDATE health_connections
+            SET status = ?, encrypted_token = ?, last_sync_at = ?, metrics = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (status, encrypted_token, now, json_dumps(metrics), now, existing["id"]),
+        )
+    else:
+        conn.execute(
+            """
+            INSERT INTO health_connections (user_id, provider, status, encrypted_token, last_sync_at, metrics, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (user_id, provider, status, encrypted_token, now, json_dumps(metrics), now),
+        )
+    conn.commit()
+    return conn.execute(
+        "SELECT * FROM health_connections WHERE user_id = ? AND provider = ?",
+        (user_id, provider),
+    ).fetchone()
+
+
+def build_health_overview(conn: sqlite3.Connection, user_id: str) -> dict[str, Any]:
+    rows = conn.execute(
+        "SELECT * FROM health_connections WHERE user_id = ? ORDER BY provider ASC",
+        (user_id,),
+    ).fetchall()
+    if not rows:
+        upsert_health_connection(conn, user_id, "google_fit", "demo")
+        rows = conn.execute(
+            "SELECT * FROM health_connections WHERE user_id = ? ORDER BY provider ASC",
+            (user_id,),
+        ).fetchall()
+
+    connections = [serialize_health_connection(row) for row in rows]
+    metric_snapshots = [item["metrics"] for item in connections if item["metrics"]]
+    summary = {
+        "steps": int(sum(item.get("steps", 0) for item in metric_snapshots) / max(len(metric_snapshots), 1)),
+        "sleep_hours": round(
+            sum(float(item.get("sleep_hours", 0)) for item in metric_snapshots) / max(len(metric_snapshots), 1),
+            1,
+        ),
+        "recovery": int(sum(item.get("recovery", 0) for item in metric_snapshots) / max(len(metric_snapshots), 1)),
+        "hydration_liters": round(
+            sum(float(item.get("hydration_liters", 0)) for item in metric_snapshots) / max(len(metric_snapshots), 1),
+            1,
+        ),
+    }
+    insights = [
+        "Восстановление держится в зелёной зоне, можно планировать плотные рабочие блоки.",
+        "Если шагов меньше 7000, Aurion предложит короткую прогулку или мягкую разминку.",
+        "Голосовые сценарии можно адаптировать под вечерний режим, если сон опускается ниже 7 часов.",
+    ]
+    timeline = []
+    for offset in range(6, -1, -1):
+        day = utc_now().date() - timedelta(days=offset)
+        timeline.append(
+            {
+                "date": day.isoformat(),
+                "steps": sample_metric(f"{user_id}:{day.isoformat()}:timeline:steps", 5400, 13000),
+                "sleep_hours": round(sample_metric(f"{user_id}:{day.isoformat()}:timeline:sleep", 58, 86) / 10, 1),
+            }
+        )
+    return {
+        "summary": summary,
+        "connections": connections,
+        "insights": insights,
+        "timeline": timeline,
+    }
+
+
+def build_twin_profile(conn: sqlite3.Connection, user_id: str) -> dict[str, Any]:
+    memories = conn.execute(
+        "SELECT * FROM memory_entries WHERE user_id = ? ORDER BY importance DESC, id DESC LIMIT 6",
+        (user_id,),
+    ).fetchall()
+    devices = conn.execute(
+        "SELECT * FROM devices WHERE user_id = ? ORDER BY id ASC",
+        (user_id,),
+    ).fetchall()
+    tasks = conn.execute(
+        "SELECT * FROM agent_tasks WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 5",
+        (user_id,),
+    ).fetchall()
+    prefs = get_user_preferences(conn, user_id)
+
+    strengths = []
+    if any("finance" in json_loads(row["tags"], []) for row in memories):
+        strengths.append("Системно следит за финансами и повторяющимися расходами.")
+    if any("comfort" in json_loads(row["tags"], []) for row in memories):
+        strengths.append("Ценит комфортные сценарии дома и мягкую автоматизацию.")
+    if prefs.get("voice_persona") == "jarvis":
+        strengths.append("Предпочитает уверенный технологичный стиль взаимодействия.")
+    if not strengths:
+        strengths.append("Быстро формирует привычки и любит короткие понятные ответы.")
+
+    routines = [
+        "Утром проверяет системный статус и быстрые сводки.",
+        "По пятницам чаще запускает финансовые и бытовые сценарии.",
+        f"В экосистеме дома держит онлайн {sum(1 for row in devices if bool(row['is_online']))} устройств.",
+    ]
+    watchouts = [
+        "При перегрузке уведомлениями лучше сокращать шум и усиливать приоритеты.",
+        "Для устойчивости сервиса важны регулярные бэкапы и контроль внешних интеграций.",
+    ]
+    focus_index = min(100, 55 + len(tasks) * 6 + len(memories) * 4)
+    return {
+        "archetype": "Strategic Operator",
+        "focus_index": focus_index,
+        "voice_persona": prefs.get("voice_persona", DEFAULT_VOICE_PERSONA),
+        "strengths": strengths,
+        "routines": routines,
+        "watchouts": watchouts,
+        "memory_highlights": [serialize_memory(row) for row in memories[:3]],
+    }
+
+
+def build_twin_predictions(conn: sqlite3.Connection, user_id: str) -> list[dict[str, Any]]:
+    suggestions = conn.execute(
+        "SELECT * FROM proactive_suggestions WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 3",
+        (user_id,),
+    ).fetchall()
+    if not suggestions:
+        generate_proactive_suggestions(conn, user_id, 30)
+        suggestions = conn.execute(
+            "SELECT * FROM proactive_suggestions WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 3",
+            (user_id,),
+        ).fetchall()
+    predictions = [
+        {
+            "id": row["id"],
+            "title": "Проактивный сценарий",
+            "confidence": round(float(row["confidence"]), 2),
+            "message": row["message"],
+            "source": row["source"],
+        }
+        for row in suggestions
+    ]
+    predictions.append(
+        {
+            "id": 10_000 + len(predictions),
+            "title": "Пиковая нагрузка вечером",
+            "confidence": 0.74,
+            "message": "Около 20:00 стоит сгладить поток уведомлений и заранее включить спокойный режим дома.",
+            "source": "digital-twin",
+        }
+    )
+    return predictions
 
 
 def build_chat_reply(conn: sqlite3.Connection, user_id: str, message: str) -> str:
@@ -1424,6 +1996,19 @@ def scan_host_ports(host: str, ports: list[int], timeout_seconds: float) -> list
     return open_ports
 
 
+def is_private_guardian_host(host: str) -> bool:
+    sanitized = host.strip().lower()
+    if not sanitized:
+        return False
+    if sanitized in {"localhost"}:
+        return True
+    try:
+        ip = ipaddress.ip_address(sanitized)
+    except ValueError:
+        return False
+    return bool(ip.is_private or ip.is_loopback or ip.is_link_local)
+
+
 def check_redis_connection() -> dict[str, Any]:
     redis_url = config_get("REDIS_URL")
     if not redis_url:
@@ -1481,6 +2066,18 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=()")
+    if request.url.scheme == "https":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
 @app.get("/health")
 async def health() -> dict[str, Any]:
     return {
@@ -1493,12 +2090,14 @@ async def health() -> dict[str, Any]:
 
 @app.post("/api/v1/auth/register")
 async def register(data: RegisterData) -> dict[str, Any]:
-    email = data.email.strip().lower()
+    email = normalize_email(data.email)
     username = data.username.strip()
     if not email or not username:
         raise HTTPException(status_code=400, detail="Email и username обязательны")
+    validate_register_payload(email, username, data.password.strip())
 
     with get_connection() as conn:
+        cleanup_expired_auth_artifacts(conn)
         if get_user_by_email(conn, email):
             raise HTTPException(status_code=409, detail="Пользователь с таким email уже существует")
         if get_user_by_username(conn, username):
@@ -1518,6 +2117,8 @@ async def register(data: RegisterData) -> dict[str, Any]:
         conn.commit()
         ensure_seeded_workspace(conn, user_id)
         user_row = get_user_by_id(conn, user_id)
+        if not user_row:
+            raise HTTPException(status_code=500, detail="Не удалось создать пользователя")
         return serialize_user(user_row)
 
 
@@ -1528,13 +2129,20 @@ async def login(request: Request) -> JSONResponse:
     password = (payload.get("password") or "").strip()
     if not login_value or not password:
         raise HTTPException(status_code=422, detail="Нужны email/username и password")
+    key = login_rate_limit_key(login_value, request)
+    if not is_creator_login(login_value) and is_login_rate_limited(key):
+        raise HTTPException(status_code=429, detail="Слишком много попыток входа. Попробуйте позже.")
 
     with get_connection() as conn:
+        cleanup_expired_auth_artifacts(conn)
         user_row = get_user_by_email(conn, login_value)
         if not user_row:
             user_row = get_user_by_username(conn, login_value)
         if not user_row or not verify_password(password, user_row["password_salt"], user_row["password_hash"]):
+            if not is_creator_login(login_value):
+                record_login_failure(key)
             raise HTTPException(status_code=401, detail="Неверный email/username или пароль")
+        clear_login_failures(key)
 
         if bool(user_row["is_2fa_enabled"]):
             challenge_id = str(uuid4())
@@ -1568,6 +2176,7 @@ async def login(request: Request) -> JSONResponse:
 async def refresh_tokens(data: RefreshRequest) -> dict[str, str]:
     token_hash = hash_refresh_token(data.refresh_token)
     with get_connection() as conn:
+        cleanup_expired_auth_artifacts(conn)
         row = conn.execute(
             """
             SELECT * FROM refresh_tokens
@@ -1776,13 +2385,19 @@ async def create_memory(
     payload: MemoryCreateRequest,
     current_user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
+    normalized_content = payload.content.strip()
+    if not normalized_content:
+        raise HTTPException(status_code=400, detail="Содержимое записи не может быть пустым")
+    if len(normalized_content) > 4000:
+        raise HTTPException(status_code=400, detail="Содержимое записи слишком длинное")
+
     with get_connection() as conn:
         conn.execute(
             """
             INSERT INTO memory_entries (user_id, content, importance, tags, created_at)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (current_user["id"], payload.content.strip(), payload.importance, json_dumps(payload.tags), iso_now()),
+            (current_user["id"], normalized_content, payload.importance, json_dumps(payload.tags), iso_now()),
         )
         memory_row = conn.execute(
             "SELECT * FROM memory_entries WHERE user_id = ? ORDER BY id DESC LIMIT 1",
@@ -2090,7 +2705,8 @@ async def list_subscriptions(current_user: dict[str, Any] = Depends(get_current_
             "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY datetime(created_at) DESC",
             (current_user["id"],),
         ).fetchall()
-        return [build_subscription_payload(conn, row) for row in rows]
+        payloads = [build_subscription_payload(conn, row) for row in rows]
+        return [payload for payload in payloads if payload is not None]
 
 
 @app.get("/api/v1/payments/subscriptions/current")
@@ -2182,7 +2798,10 @@ async def cancel_subscription(subscription_id: int, current_user: dict[str, Any]
         )
         updated = conn.execute("SELECT * FROM subscriptions WHERE id = ?", (subscription_id,)).fetchone()
         conn.commit()
-        return build_subscription_payload(conn, updated)
+        payload = build_subscription_payload(conn, updated)
+        if not payload:
+            raise HTTPException(status_code=404, detail="Подписка не найдена")
+        return payload
 
 
 @app.get("/api/v1/payments/payments")
@@ -2413,6 +3032,227 @@ async def list_proactive_suggestions(current_user: dict[str, Any] = Depends(get_
         ]
 
 
+@app.get("/api/v1/health/data")
+async def health_data(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    with get_connection() as conn:
+        return build_health_overview(conn, current_user["id"])
+
+
+@app.post("/api/v1/health/connect/google")
+async def health_connect_google(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    with get_connection() as conn:
+        row = upsert_health_connection(conn, current_user["id"], "google_fit", "connected", "mock-google-fit-token")
+        return serialize_health_connection(row)
+
+
+@app.post("/api/v1/health/connect/fitbit")
+async def health_connect_fitbit(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    with get_connection() as conn:
+        row = upsert_health_connection(conn, current_user["id"], "fitbit", "connected", "mock-fitbit-token")
+        return serialize_health_connection(row)
+
+
+@app.get("/api/v1/twin/profile")
+async def twin_profile(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    with get_connection() as conn:
+        return build_twin_profile(conn, current_user["id"])
+
+
+@app.get("/api/v1/twin/predictions")
+async def twin_predictions(current_user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    with get_connection() as conn:
+        return build_twin_predictions(conn, current_user["id"])
+
+
+@app.get("/api/v1/reminders")
+async def reminders_list(current_user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM reminders
+            WHERE user_id = ?
+            ORDER BY
+                CASE status WHEN 'pending' THEN 0 WHEN 'completed' THEN 1 ELSE 2 END,
+                datetime(due_at) ASC,
+                id DESC
+            """,
+            (current_user["id"],),
+        ).fetchall()
+        return [serialize_reminder(row) for row in rows]
+
+
+@app.post("/api/v1/reminders")
+async def reminders_create(
+    payload: ReminderCreateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    priority = normalize_choice(payload.priority, REMINDER_PRIORITIES, "priority")
+    due_at = parse_optional_iso(payload.due_at, "due_at")
+    now = iso_now()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO reminders (user_id, title, note, due_at, priority, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+            """,
+            (current_user["id"], payload.title.strip(), payload.note.strip(), due_at, priority, now, now),
+        )
+        reminder_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        row = conn.execute("SELECT * FROM reminders WHERE id = ?", (reminder_id,)).fetchone()
+        conn.commit()
+        return serialize_reminder(row)
+
+
+@app.patch("/api/v1/reminders/{reminder_id}")
+async def reminders_update(
+    reminder_id: int,
+    payload: ReminderUpdateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM reminders WHERE id = ? AND user_id = ?",
+            (reminder_id, current_user["id"]),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Напоминание не найдено")
+
+        title = payload.title.strip() if payload.title is not None else row["title"]
+        note = payload.note.strip() if payload.note is not None else row["note"]
+        due_at = parse_optional_iso(payload.due_at, "due_at") if payload.due_at is not None else row["due_at"]
+        priority = (
+            normalize_choice(payload.priority, REMINDER_PRIORITIES, "priority")
+            if payload.priority is not None
+            else row["priority"]
+        )
+        status = (
+            normalize_choice(payload.status, REMINDER_STATUSES, "status")
+            if payload.status is not None
+            else row["status"]
+        )
+        conn.execute(
+            """
+            UPDATE reminders
+            SET title = ?, note = ?, due_at = ?, priority = ?, status = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (title, note, due_at, priority, status, iso_now(), reminder_id),
+        )
+        updated = conn.execute("SELECT * FROM reminders WHERE id = ?", (reminder_id,)).fetchone()
+        conn.commit()
+        return serialize_reminder(updated)
+
+
+@app.delete("/api/v1/reminders/{reminder_id}")
+async def reminders_delete(reminder_id: int, current_user: dict[str, Any] = Depends(get_current_user)) -> Response:
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM reminders WHERE id = ? AND user_id = ?",
+            (reminder_id, current_user["id"]),
+        )
+        conn.commit()
+    return Response(status_code=204)
+
+
+@app.get("/api/v1/social/feed")
+async def social_feed(current_user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM social_posts WHERE user_id = ? ORDER BY datetime(created_at) DESC, id DESC LIMIT 30",
+            (current_user["id"],),
+        ).fetchall()
+        return [serialize_social_post(row) for row in rows]
+
+
+@app.post("/api/v1/social/feed")
+async def social_create_post(
+    payload: SocialPostCreateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    mood = normalize_choice(payload.mood, SOCIAL_MOODS, "mood")
+    now = iso_now()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO social_posts (user_id, author_name, content, source, mood, reactions, created_at)
+            VALUES (?, ?, ?, 'founder-note', ?, ?, ?)
+            """,
+            (current_user["id"], current_user["username"], payload.content.strip(), mood, json_dumps({"boost": 1}), now),
+        )
+        post_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        row = conn.execute("SELECT * FROM social_posts WHERE id = ?", (post_id,)).fetchone()
+        conn.commit()
+        return serialize_social_post(row)
+
+
+@app.get("/api/v1/media/items")
+async def media_items(current_user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM media_items WHERE user_id = ? ORDER BY datetime(created_at) DESC, id DESC LIMIT 30",
+            (current_user["id"],),
+        ).fetchall()
+        return [serialize_media_item(row) for row in rows]
+
+
+@app.post("/api/v1/media/items")
+async def media_create_item(
+    payload: MediaItemCreateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    media_type = normalize_choice(payload.media_type, MEDIA_ITEM_TYPES, "media_type")
+    mood = normalize_choice(payload.mood, SOCIAL_MOODS, "mood")
+    now = iso_now()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO media_items (user_id, title, media_type, mood, duration_minutes, status, description, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?)
+            """,
+            (
+                current_user["id"],
+                payload.title.strip(),
+                media_type,
+                mood,
+                payload.duration_minutes,
+                payload.description.strip(),
+                now,
+                now,
+            ),
+        )
+        item_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        row = conn.execute("SELECT * FROM media_items WHERE id = ?", (item_id,)).fetchone()
+        conn.commit()
+        return serialize_media_item(row)
+
+
+@app.patch("/api/v1/media/items/{item_id}")
+async def media_update_item(
+    item_id: int,
+    payload: MediaItemUpdateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    status = normalize_choice(payload.status, MEDIA_ITEM_STATUSES, "status")
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM media_items WHERE id = ? AND user_id = ?",
+            (item_id, current_user["id"]),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Медиа-элемент не найден")
+        conn.execute(
+            "UPDATE media_items SET status = ?, updated_at = ? WHERE id = ?",
+            (status, iso_now(), item_id),
+        )
+        updated = conn.execute("SELECT * FROM media_items WHERE id = ?", (item_id,)).fetchone()
+        conn.commit()
+        return serialize_media_item(updated)
+
+
 @app.get("/api/v1/diy/instructions")
 async def diy_instructions(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     mqtt_host = config_get("MQTT_HOST", "mqtt://broker.hivemq.com")
@@ -2502,9 +3342,19 @@ async def guardian_scan(
     payload: GuardianScanRequest,
     current_user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    hosts = payload.hosts[:16]
+    hosts = [host.strip() for host in payload.hosts if host.strip()][:16]
     report: list[dict[str, Any]] = []
     for host in hosts:
+        if not is_private_guardian_host(host):
+            report.append(
+                {
+                    "host": host,
+                    "open_ports": [],
+                    "risks": ["Сканирование разрешено только для локальных/private IP адресов."],
+                    "score": 0,
+                }
+            )
+            continue
         open_ports = scan_host_ports(host, payload.ports, payload.timeout_seconds)
         risks = []
         if 23 in open_ports:

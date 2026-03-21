@@ -1,39 +1,35 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, waitFor } from './mocks/testUtils'
-import MemoryPage from '@/pages/Memory'
+import { render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { MemoryPage } from '@/pages/Memory/MemoryPage'
 
 describe('MemoryPage', () => {
-  it('рендерит страницу памяти', () => {
-    render(<MemoryPage />)
-    expect(screen.getByTestId('memory-page')).toBeInTheDocument()
-  })
-
   it('отображает заголовок ВЕКТОРНАЯ ПАМЯТЬ', () => {
-    render(<MemoryPage />)
+    render(<MemoryRouter><MemoryPage /></MemoryRouter>)
     expect(screen.getByText('ВЕКТОРНАЯ ПАМЯТЬ')).toBeInTheDocument()
   })
 
   it('показывает список записей после загрузки', async () => {
-    render(<MemoryPage />)
+    render(<MemoryRouter><MemoryPage /></MemoryRouter>)
     await waitFor(() => {
-      expect(screen.getByTestId('memory-list')).toBeInTheDocument()
+      expect(screen.getAllByTestId('memory-card').length).toBeGreaterThan(0)
     }, { timeout: 3000 })
   })
 
   it('отображает записи из мок-данных', async () => {
-    render(<MemoryPage />)
+    render(<MemoryRouter><MemoryPage /></MemoryRouter>)
     await waitFor(() => {
-      expect(screen.getByText(/Встреча в пятницу/)).toBeInTheDocument()
+      expect(screen.getByText(/Тестовая запись в памяти/)).toBeInTheDocument()
     }, { timeout: 3000 })
   })
 
   it('кнопка добавления записи', () => {
-    render(<MemoryPage />)
-    expect(screen.getByText('Добавить')).toBeInTheDocument()
+    render(<MemoryRouter><MemoryPage /></MemoryRouter>)
+    expect(screen.getByText('ДОБАВИТЬ')).toBeInTheDocument()
   })
 
   it('поле поиска присутствует', () => {
-    render(<MemoryPage />)
-    expect(screen.getByPlaceholderText('Поиск по памяти...')).toBeInTheDocument()
+    render(<MemoryRouter><MemoryPage /></MemoryRouter>)
+    expect(screen.getByPlaceholderText('Семантический поиск...')).toBeInTheDocument()
   })
 })

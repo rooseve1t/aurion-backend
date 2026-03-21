@@ -1,20 +1,16 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { server } from './server'
 import { AuthPage } from '@/pages/Auth/AuthPage'
 
 describe('AuthPage', () => {
-  beforeAll(() => server.listen())
-  afterEach(() => server.resetHandlers())
-  afterAll(() => server.close())
-
   const renderAuth = () =>
     render(
       <MemoryRouter initialEntries={['/auth/login']}>
         <Routes>
           <Route path="/auth/login" element={<AuthPage />} />
+          <Route path="/auth/register" element={<AuthPage />} />
           <Route path="/dashboard" element={<div>Dashboard</div>} />
         </Routes>
       </MemoryRouter>
@@ -22,24 +18,25 @@ describe('AuthPage', () => {
 
   it('показывает форму входа', () => {
     renderAuth()
-    expect(screen.getByText('ВОЙТИ')).toBeDefined()
-    expect(screen.getByPlaceholderText('user@aurionai.ru')).toBeDefined()
+    expect(screen.getByText('ВОЙТИ')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('user@aurionai.ru или ceo.martin')).toBeInTheDocument()
   })
 
   it('переключается на регистрацию', async () => {
     renderAuth()
     await userEvent.click(screen.getByText('СОЗДАТЬ АККАУНТ'))
-    expect(screen.getByText('ЗАРЕГИСТРИРОВАТЬСЯ')).toBeDefined()
+    await waitFor(() => {
+      expect(screen.getByText('ЗАРЕГИСТРИРОВАТЬСЯ')).toBeInTheDocument()
+    })
   })
 
   it('заполняет и отправляет форму входа', async () => {
     renderAuth()
-    await userEvent.type(screen.getByPlaceholderText('user@aurionai.ru'), 'test@test.com')
+    await userEvent.type(screen.getByPlaceholderText('user@aurionai.ru или ceo.martin'), 'test@test.com')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByText('ВОЙТИ'))
     await waitFor(() => {
-      // После успешного входа перенаправляет
-      expect(screen.queryByText('Dashboard') !== null || screen.queryByText('ВОЙТИ') !== null).toBeTruthy()
+      expect(screen.getByText('Dashboard')).toBeInTheDocument()
     }, { timeout: 3000 })
   })
 

@@ -1,0 +1,375 @@
+/* 🎨 MOBILE-FIRST СТИЛИ AURION OS */
+
+/* 📱 Базовые мобильные стили */
+@media (max-width: 768px) {
+  .aurion-container {
+    padding: 0.5rem;
+    overflow-x: hidden;
+  }
+
+  .aurion-header {
+    padding: 1rem 0.5rem;
+  }
+
+  .aurion-logo {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .aurion-title {
+    font-size: 1.25rem;
+  }
+
+  .aurion-subtitle {
+    font-size: 0.75rem;
+  }
+
+  /* 🎨 Навигация для мобильных */
+  .aurion-nav {
+    padding: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .aurion-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .aurion-nav-item {
+    min-width: fit-content;
+    padding: 0.75rem 1rem;
+    margin: 0 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  .aurion-nav-item span:last-child {
+    display: none; /* Скрываем текст на мобильных */
+  }
+
+  /* 🎨 Карточки для мобильных */
+  .aurion-card {
+    margin: 0.5rem 0;
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .aurion-card-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* 🎨 Модули для мобильных */
+  .aurion-module {
+    padding: 1.5rem 1rem;
+    margin: 0.5rem 0;
+  }
+
+  .aurion-module-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .aurion-module-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* 🎨 Bioluminescent эффекты для мобильных */
+  .bioluminescent-bg {
+    background-size: 200% 200%;
+    animation: bioluminescent-mobile 8s ease-in-out infinite;
+  }
+
+  @keyframes bioluminescent-mobile {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* 🎨 Touch интерфейс */
+  .touch-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .touch-button:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+
+  /* 🎨 Swipe жесты */
+  .swipe-container {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .swipe-item {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  /* 🎨 Статус бар для мобильных */
+  .mobile-status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    z-index: 1000;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0.5rem;
+    z-index: 1000;
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-nav-icon {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-nav-text {
+    font-size: 0.625rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .mobile-nav-item.active .mobile-nav-text {
+    color: white;
+  }
+
+  /* 🎨 Адаптивный контент */
+  .mobile-content {
+    padding: 44px 0 80px 0; /* Учитываем статус бар и навигацию */
+  }
+
+  /* 🎨 Голсовой интерфейс для мобильных */
+  .voice-button-mobile {
+    position: fixed;
+    bottom: 100px;
+    right: 1rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 999;
+  }
+
+  .voice-button-mobile:active {
+    transform: scale(0.9);
+  }
+
+  .voice-button-mobile.recording {
+    animation: pulse 1.5s ease-in-out infinite;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+
+  /* 🎨 Уведомления для мобильных */
+  .mobile-notification {
+    position: fixed;
+    top: 60px;
+    left: 1rem;
+    right: 1rem;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1001;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* 🎨 Модальные окна для мобильных */
+  .mobile-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-end;
+    z-index: 2000;
+  }
+
+  .mobile-modal-content {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 1.5rem 1.5rem 0 0;
+    padding: 1.5rem;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* 🎨 Таблеты */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .aurion-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .aurion-module-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .aurion-nav-item span:last-child {
+    display: inline; /* Показываем текст на планшетах */
+  }
+}
+
+/* 🎨 Десктоп */
+@media (min-width: 1025px) {
+  .mobile-status-bar,
+  .mobile-nav {
+    display: none;
+  }
+
+  .mobile-content {
+    padding: 0;
+  }
+}
+
+/* 🎨 PWA оптимизация */
+@media (display-mode: standalone) {
+  .aurion-container {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .mobile-content {
+    height: calc(100vh - 44px - 80px);
+    overflow-y: auto;
+  }
+}
+
+/* 🎨 Темная тема для мобильных */
+@media (max-width: 768px) {
+  .dark .aurion-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .dark .mobile-nav {
+    background: rgba(0, 0, 0, 0.95);
+  }
+
+  .dark .mobile-status-bar {
+    background: rgba(0, 0, 0, 0.95);
+  }
+}
+
+/* 🎨 Светлая тема для мобильных */
+@media (max-width: 768px) {
+  .light .aurion-card {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .light .mobile-nav {
+    background: rgba(255, 255, 255, 0.95);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .light .mobile-status-bar {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* 🎨 Оптимизация производительности для мобильных */
+@media (max-width: 768px) {
+  .aurion-container {
+    will-change: transform;
+  }
+
+  .bioluminescent-bg {
+    will-change: background-position;
+  }
+
+  .aurion-card {
+    will-change: transform;
+  }
+
+  .aurion-card:hover {
+    transform: none; /* Отключаем hover эффекты на мобильных */
+  }
+
+  .aurion-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* 🎨 Доступность для мобильных */
+@media (max-width: 768px) {
+  .aurion-card:focus-visible,
+  .aurion-nav-item:focus-visible,
+  .mobile-nav-item:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+  }
+
+  .voice-button-mobile:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+  }
+}

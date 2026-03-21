@@ -4,6 +4,16 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+try:
+    from app.services.quantum_extra import (
+        IBMQuantumAdapter,
+        PasqalAdapter,
+        AlibabaQuantumAdapter,
+    )
+except Exception:
+    # Fallback if optional package structure unavailable in older stage builds.
+    IBMQuantumAdapter = PasqalAdapter = AlibabaQuantumAdapter = None  # type: ignore
+
 
 @dataclass
 class QuantumRouter:
@@ -20,6 +30,16 @@ class QuantumRouter:
 
     def _can_use_hpc(self) -> bool:
         return bool(self.hpc_url.strip() and self.hpc_user.strip() and self.hpc_password.strip())
+
+    def _extra_adapters(self) -> list:
+        adapters = []
+        if IBMQuantumAdapter:
+            adapters.append(IBMQuantumAdapter())
+        if PasqalAdapter:
+            adapters.append(PasqalAdapter())
+        if AlibabaQuantumAdapter:
+            adapters.append(AlibabaQuantumAdapter())
+        return adapters
 
     def _run_quantum(self, task_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -60,6 +80,12 @@ class QuantumRouter:
 
     def route_task(self, task_type: str, payload: dict[str, Any], preferred_backend: str = "auto") -> dict[str, Any]:
         target = (preferred_backend or "auto").strip().lower()
+
+        # Extra adapters (IBM/Pasqal/Alibaba mocks)
+        for adapter in self._extra_adapters():
+            if target in {adapter.backend, adapter.provider} and adapter.can_run():
+                return adapter.run(task_type, payload)
+
         if target == "quantum" and self._can_use_quantum():
             return self._run_quantum(task_type, payload)
         if target == "hpc" and self._can_use_hpc():
@@ -67,6 +93,12 @@ class QuantumRouter:
 
         if target == "auto":
             heavy_task = task_type.lower() in {"simulation", "train", "batch", "hpc"}
+
+            # Prefer configured extra adapters before falling back to legacy backends
+            for adapter in self._extra_adapters():
+                if adapter.can_run():
+                    return adapter.run(task_type, payload)
+
             if heavy_task and self._can_use_hpc():
                 return self._run_hpc(task_type, payload)
             if self._can_use_quantum():

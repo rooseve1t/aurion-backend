@@ -11,6 +11,11 @@ function normalizeApiBase(rawBase?: string): string {
 const BASE_URL = normalizeApiBase(import.meta.env.VITE_API_URL)
 const FALLBACK_BASE_URL = '/api/v1'
 
+function clearAuthTokens() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+}
+
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
@@ -44,31 +49,20 @@ function shouldSkipRefresh(url?: string): boolean {
   )
 }
 
-function isAuthBootstrapEndpoint(url?: string): boolean {
-  return Boolean(
-    url && (
-      url.includes('/auth/token') ||
-      url.includes('/auth/register') ||
-      url.includes('/auth/2fa/verify')
-    )
-  )
-}
-
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _fallbackUsed?: boolean }
     const refresh = localStorage.getItem('refresh_token')
-    const accessToken = localStorage.getItem('access_token')
 
-    // Fallback only for bootstrap auth calls before the user gets a token.
+    // Network fallback to same-origin proxy (/api/v1) when primary base is unreachable.
     if (
       !error.response &&
       original &&
       BASE_URL !== FALLBACK_BASE_URL &&
       !original._fallbackUsed &&
-      !accessToken &&
-      isAuthBootstrapEndpoint(original?.url)
+      typeof original.url === 'string' &&
+      original.url.startsWith('/')
     ) {
       original._fallbackUsed = true
       original.baseURL = FALLBACK_BASE_URL
@@ -93,9 +87,23 @@ api.interceptors.response.use(
 
     isRefreshing = true
     try {
-      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {
-        refresh_token: refresh,
-      })
+      let data: { access_token: string; refresh_token: string }
+      try {
+        const response = await axios.post(`${BASE_URL}/auth/refresh`, { refresh_token: refresh })
+        data = response.data
+      } catch (refreshError) {
+        if (
+          axios.isAxiosError(refreshError) &&
+          !refreshError.response &&
+          BASE_URL !== FALLBACK_BASE_URL
+        ) {
+          const fallbackResponse = await axios.post(`${FALLBACK_BASE_URL}/auth/refresh`, { refresh_token: refresh })
+          data = fallbackResponse.data
+          original.baseURL = FALLBACK_BASE_URL
+        } else {
+          throw refreshError
+        }
+      }
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('refresh_token', data.refresh_token)
       queue.forEach((item) => {
@@ -109,7 +117,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
       queue.forEach((item) => item.reject(refreshError))
       if (axios.isAxiosError(refreshError) && [400, 401].includes(refreshError.response?.status ?? 0)) {
-        localStorage.clear()
+        clearAuthTokens()
         window.location.href = '/auth/login'
       }
       return Promise.reject(refreshError)

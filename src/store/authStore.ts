@@ -76,7 +76,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       if (refresh) await authService.logout(refresh)
     } finally {
-      localStorage.clear()
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
       set({ user: null, accessToken: null, refreshToken: null, needs2FA: false, pending2FAToken: null })
     }
   },

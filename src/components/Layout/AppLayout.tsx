@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useSystemStore } from '@/store/systemStore'
 import { SideNav } from './SideNav'
@@ -10,7 +10,6 @@ export function AppLayout() {
   const { user, accessToken, fetchMe } = useAuthStore()
   const fetchStats = useSystemStore((s) => s.fetch)
   const navigate = useNavigate()
-  const location = useLocation()
 
   useEffect(() => {
     if (!accessToken) { navigate('/auth/login'); return }
@@ -18,7 +17,7 @@ export function AppLayout() {
     fetchStats()
     const interval = setInterval(fetchStats, 30000)
     return () => clearInterval(interval)
-  }, [accessToken])
+  }, [accessToken, user, fetchMe, fetchStats, navigate])
 
   if (!accessToken) return null
 

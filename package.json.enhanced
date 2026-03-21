@@ -1,0 +1,64 @@
+{
+  "name": "aurion-os-enhanced",
+  "version": "2.0.0",
+  "description": "AURION OS — Автономная AI операционная система с bioluminescent дизайном",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --port 4173",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "lint": "prettier --plugin-search-dir . --check . && eslint .",
+    "format": "prettier --plugin-search-dir . --write ."
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^2.0.0",
+    "@sveltejs/adapter-static": "^2.0.1",
+    "@sveltejs/kit": "^1.5.0",
+    "@types/cookie": "^0.5.1",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-svelte": "^2.26.0",
+    "prettier": "^2.8.0",
+    "prettier-plugin-svelte": "^2.8.1",
+    "svelte": "^3.54.0",
+    "svelte-check": "^3.0.1",
+    "typescript": "^4.9.3",
+    "vite": "^4.0.0"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^4.5.15",
+    "@fontsource/jetbrains-mono": "^4.5.10",
+    "@fontsource/space-grotesk": "^4.5.8",
+    "clsx": "^1.2.1",
+    "framer-motion": "^10.12.16",
+    "lucide-svelte": "^0.263.1",
+    "mode-watcher": "^0.1.1",
+    "svelte-framer-motion": "^0.2.2",
+    "tailwindcss": "^3.3.0"
+  },
+  "keywords": [
+    "aurion-os",
+    "ai-assistant",
+    "jarvis",
+    "quantum-computing",
+    "osint",
+    "bioluminescent",
+    "voice-assistant",
+    "neural-network"
+  ],
+  "author": "Aurion OS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aurion-os/aurion-os"
+  },
+  "bugs": {
+    "url": "https://github.com/aurion-os/aurion-os/issues"
+  },
+  "homepage": "https://aurionos.com"
+}

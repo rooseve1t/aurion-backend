@@ -136,6 +136,89 @@ export interface FinanceAnalytics {
   period: string
 }
 
+// ── Health / Twin / Reminders / Social / Media ──────────────────────────────
+export interface HealthConnection {
+  id: number
+  provider: string
+  status: string
+  last_sync_at: string | null
+  metrics: {
+    steps: number
+    sleep_hours: number
+    recovery: number
+    hydration_liters: number
+    stress_index?: number
+  }
+  updated_at: string
+}
+
+export interface HealthData {
+  summary: {
+    steps: number
+    sleep_hours: number
+    recovery: number
+    hydration_liters: number
+  }
+  connections: HealthConnection[]
+  insights: string[]
+  timeline: Array<{
+    date: string
+    steps: number
+    sleep_hours: number
+  }>
+}
+
+export interface TwinProfile {
+  archetype: string
+  focus_index: number
+  voice_persona: VoicePersona
+  strengths: string[]
+  routines: string[]
+  watchouts: string[]
+  memory_highlights: MemoryEntry[]
+}
+
+export interface TwinPrediction {
+  id: number
+  title: string
+  confidence: number
+  message: string
+  source: string
+}
+
+export interface Reminder {
+  id: number
+  title: string
+  note: string
+  due_at: string | null
+  priority: 'low' | 'medium' | 'high'
+  status: 'pending' | 'completed' | 'archived'
+  created_at: string
+  updated_at: string
+}
+
+export interface SocialPost {
+  id: number
+  author_name: string
+  content: string
+  source: string
+  mood: 'focus' | 'warning' | 'insight' | 'calm'
+  reactions: Record<string, number>
+  created_at: string
+}
+
+export interface MediaItem {
+  id: number
+  title: string
+  media_type: 'playlist' | 'music' | 'briefing' | 'video'
+  mood: 'focus' | 'warning' | 'insight' | 'calm'
+  duration_minutes: number
+  status: 'queued' | 'active' | 'completed' | 'paused'
+  description: string
+  created_at: string
+  updated_at: string
+}
+
 // ── System ────────────────────────────────────────────────────────────────────
 export interface SystemStats {
   devices_online: number

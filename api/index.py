@@ -4,3 +4,5 @@ import os
 os.environ.setdefault("AURION_DB_PATH", "/tmp/aurion.db")
 
 from app.main import app
+
+__all__ = ["app"]

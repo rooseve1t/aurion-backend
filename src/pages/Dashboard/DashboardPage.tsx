@@ -23,7 +23,10 @@ export function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const target = messagesEndRef.current
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages, isTyping])
 
   const handleSend = (e: React.FormEvent) => {

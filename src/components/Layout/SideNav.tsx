@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Brain, Home, Shield, Users, Cpu,
-  CreditCard, User, LogOut, Lock, Wrench
+  LayoutDashboard, Brain, Home, Shield, Cpu,
+  CreditCard, User, LogOut, Lock, Wrench,
+  HeartPulse, Workflow, BellRing, MessagesSquare, Headphones
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -16,6 +17,11 @@ const NAV = [
   { to: '/autonomy',  icon: Cpu,             label: 'Агенты',     feature: 'agents' },
   { to: '/guardian',  icon: Shield,          label: 'Защита',     feature: null },
   { to: '/diy',       icon: Wrench,          label: 'DIY Hub',    feature: null },
+  { to: '/health',    icon: HeartPulse,      label: 'Health',     feature: null },
+  { to: '/twin',      icon: Workflow,        label: 'Twin',       feature: null },
+  { to: '/reminders', icon: BellRing,        label: 'Напоминания',feature: null },
+  { to: '/social',    icon: MessagesSquare,  label: 'Social',     feature: null },
+  { to: '/media',     icon: Headphones,      label: 'Media',      feature: null },
   { to: '/payments',  icon: CreditCard,      label: 'Подписка',   feature: null },
   { to: '/profile',   icon: User,            label: 'Профиль',    feature: null },
 ]
@@ -31,7 +37,7 @@ export function SideNav() {
     navigate('/auth/login')
   }
 
-  const handleNav = (e: React.MouseEvent, feature: string | null, to: string) => {
+  const handleNav = (e: React.MouseEvent, feature: string | null) => {
     if (feature && !hasFeature(feature)) {
       e.preventDefault()
       warning(`Требуется Pro-подписка для доступа к этому модулю`)
@@ -60,7 +66,7 @@ export function SideNav() {
                 className={({ isActive }) =>
                   `${styles.link} ${isActive ? styles.active : ''} ${locked ? styles.locked : ''}`
                 }
-                onClick={(e) => handleNav(e, feature, to)}
+                onClick={(e) => handleNav(e, feature)}
               >
                 <Icon size={16} />
                 <span>{label}</span>

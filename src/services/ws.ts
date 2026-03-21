@@ -35,7 +35,9 @@ class WebSocketService {
       try {
         const msg: WsMessage = JSON.parse(event.data)
         this.handlers.forEach((h) => h(msg))
-      } catch {}
+      } catch {
+        // Ignore malformed WS payloads in MVP mode.
+      }
     }
 
     this.ws.onclose = () => {

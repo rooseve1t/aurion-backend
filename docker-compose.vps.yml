@@ -12,6 +12,8 @@ services:
       - "8001:8000"
     volumes:
       - ./data:/app/data
+    mem_limit: 1024m
+    cpus: 1.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 20s

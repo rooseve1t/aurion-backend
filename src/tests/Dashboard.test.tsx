@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { server } from './server'
 
 // Mock WebSocket
 vi.stubGlobal('WebSocket', class {
@@ -16,19 +15,15 @@ vi.stubGlobal('WebSocket', class {
 })
 
 describe('DashboardPage', () => {
-  beforeAll(() => server.listen())
-  afterEach(() => server.resetHandlers())
-  afterAll(() => server.close())
-
   it('отображает заголовок чата', async () => {
     const { DashboardPage } = await import('@/pages/Dashboard/DashboardPage')
     render(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(screen.getByText('ЧАТ С AURION')).toBeDefined()
+    expect(screen.getByText('ЧАТ С AURION')).toBeInTheDocument()
   })
 
   it('показывает поле ввода', async () => {
     const { DashboardPage } = await import('@/pages/Dashboard/DashboardPage')
     render(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(screen.getByPlaceholderText('Введите сообщение...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Введите сообщение...')).toBeInTheDocument()
   })
 })

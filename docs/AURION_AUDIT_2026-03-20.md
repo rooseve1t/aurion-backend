@@ -1,165 +1,193 @@
-# Aurion OS Audit Report (2026-03-20)
+# Aurion OS — Total Audit & Polish Report
+**Date:** 2026-03-20  
+**Repository:** `aurion-backend`  
+**Scope:** backend (FastAPI), frontend (React/TS), tests, infra/CI/CD, env/docs
 
-## 1. Architecture
+## 1) Coverage Summary
 
-Aurion OS currently uses a **single FastAPI backend** (`app/main.py`) with SQLite as core storage and a React/Vite frontend (`src/*`).
+- Total project files checked (`rg --files | wc -l`): **122**
+- Main backend module: `app/main.py` (+ `app/quantum_router.py`)
+- Frontend modules: `src/*` (pages, stores, services, tests)
+- Infra/config: `Dockerfile`, `docker-compose.vps.yml`, `scripts/deploy_vps.sh`, `.env*`, workflow files
 
-- Backend:
-  - Auth + 2FA + refresh/logout.
-  - Memory, Smart Home, Agents/Tasks, Payments/Finance.
-  - Voice WebSocket (`/api/v1/voice/ws`) with persona and emotion metadata.
-  - New runtime config API (`/api/v1/config`, `/api/v1/config/update`) for hot key updates.
-- Frontend:
-  - Router-based SPA with pages for Dashboard, Memory, Home, Agents, Payments, Profile, Guardian, DIY.
-  - Axios interceptor with token refresh.
-  - WebSocket chat via voice module.
-- Deployment:
-  - Vercel frontend + backend tunnel/VPS path.
-  - Added GitHub Actions workflow for auto-deploy to two VPS hosts.
-
-## 2. Implemented Modules and Stage Status
-
-### Stage 1-13 Summary
-
-1. Stage 1 (Auth base): **Implemented**
-   - Files: `app/main.py`, `src/services/auth.ts`, `src/store/authStore.ts`.
-2. Stage 2 (Memory/vector-like retrieval): **Implemented (MVP heuristic)**
-   - Files: `app/main.py` memory endpoints, `src/pages/Memory/*`.
-3. Stage 3 (Smart Home): **Implemented (MVP)**
-   - Files: `app/main.py` `/smarthome/*`, `src/pages/Home/*`.
-4. Stage 4 (Dashboard/system): **Implemented**
-   - Files: `app/main.py` `/system/stats`, `src/pages/Dashboard/*`.
-5. Stage 5 (Payments/subscriptions): **Implemented (demo checkout)**
-   - Files: `app/main.py` `/payments/*`, `src/pages/Payments/*`.
-6. Stage 6 (Finance analytics): **Implemented (MVP)**
-   - Files: `app/main.py` `/finance/*`, `src/services/finance.ts`.
-7. Stage 7 (Voice/chat): **Implemented + upgraded**
-   - Files: `app/main.py` websocket + TTS metadata, `src/services/voice.ts`.
-8. Stage 8 (Agents/autonomy): **Implemented**
-   - Files: `app/main.py` `/agents/*`, `src/pages/Autonomy/*`.
-9. Stage 9 (Guardian): **Upgraded to functional MVP**
-   - Files: `app/main.py` `/guardian/*`, `src/pages/Guardian/GuardianPage.tsx`.
-10. Stage 10 (Profile/security): **Implemented + upgraded**
-   - Files: `app/main.py` profile preferences + 2FA, `src/pages/Profile/*`.
-11. Stage 11 (Proactive behavior): **Implemented (new)**
-   - Files: `app/main.py` `/proactive/*`.
-12. Stage 12 (DIY Hub): **Implemented (new MVP)**
-   - Files: `app/main.py` `/diy/*`, `src/pages/DIY/*`, `src/services/diy.ts`.
-13. Stage 13 (Routing external compute): **Implemented (new router module)**
-   - Files: `app/quantum_router.py`, `app/main.py` `/quantum/route`.
-
-### Additional Modules
-
-- JARVIS-like persona voice: **Implemented (style/persona level)**
-  - Files: `app/main.py`, `src/pages/Profile/ProfilePage.tsx`.
-- PQC/quantum provider routing: **Implemented as adapter layer**
-  - Files: `app/quantum_router.py`.
-- Yandex APIs (SpeechKit-ready): **Integrated via runtime keys**
-  - Files: `app/main.py` (`synthesize_tts`).
-- Voice purchases: **Partially implemented via payments flow (no voice trigger yet)**.
-- Object recognition / Vision: **Not implemented (requires dedicated CV pipeline)**.
-- Wearables: **Config-ready, business logic not implemented**.
-- Matter: **Basic protocol flag in smart-home device model**.
-- Generation APIs (Replicate/HF): **Config-ready, endpoints not yet implemented**.
-- AR / Digital Twin: **Stub only** (`src/pages/Stubs/*`).
-
-## 3. Completed Changes in This Iteration
+## 2) Architecture Snapshot
 
 ### Backend
-
-- Added runtime config hot reload support:
-  - `RUNTIME_CONFIG`, `load_runtime_config`, `save_runtime_config`.
-  - Endpoints: `/api/v1/config`, `/api/v1/config/update`.
-- Added creator role enforcement path and kept founder email auto-role logic.
-- Added user voice preferences:
-  - `/api/v1/profile/preferences`
-  - `/api/v1/profile/preferences/voice`
-- Added emotional voice pipeline metadata:
-  - voice personas: `calm`, `ironic`, `sarcastic`, `jarvis`.
-  - emotion inference + SpeechKit synthesis attempt/fallback.
-  - public no-key fallback TTS provider (Google Translate TTS endpoint).
-- Added founder bootstrap account (creator):
-  - `martinleterier@mail.ru / ceo.martin / 71759402` via env-configurable startup seed.
-- Added voice identification MVP:
-  - `/api/v1/voice/profiles/enroll`
-  - `/api/v1/voice/profiles/identify`
-- Added proactivity/adaptation:
-  - `/api/v1/proactive/generate`
-  - `/api/v1/proactive/suggestions`
-- Added DIY hub backend:
-  - `/api/v1/diy/instructions`
-  - `/api/v1/diy/sketches` (POST/GET)
-- Added Guardian upgrades:
-  - `/api/v1/guardian/scan`
-  - `/api/v1/guardian/router-audit`
-- Added compute router/HPC adapter:
-  - `/api/v1/quantum/route`
-  - `app/quantum_router.py` with Quantum/HPC/Local fallback.
-- Added integrations status endpoint:
-  - `/api/v1/system/integrations` (PostgreSQL/Redis connectivity check).
-- Expanded schema:
-  - `user_preferences`, `voice_profiles`, `proactive_suggestions`, `diy_sketches`.
+- Single FastAPI app (`app/main.py`) with SQLite core storage.
+- Major domains:
+  - Auth/2FA/tokens (`/api/v1/auth/*`)
+  - Memory (`/api/v1/memory/*`)
+  - Smart Home (`/api/v1/smarthome/*`)
+  - Agents (`/api/v1/agents/*`)
+  - Payments/Finance (`/api/v1/payments/*`, `/api/v1/finance/*`)
+  - Voice (`/api/v1/voice/*`, WebSocket `/api/v1/voice/ws`)
+  - Proactive/DIY/Guardian/Quantum/Config
 
 ### Frontend
+- React + Vite SPA with route pages (`src/pages/*`)
+- Zustand stores (`src/store/*`)
+- API layer via Axios interceptors (`src/services/api.ts`)
 
-- Profile page: voice persona selector and save action.
-- Guardian page: live scan/audit UI.
-- New DIY page and API service.
-- Router/nav updated for DIY module.
+### Infra
+- Containerized backend (`Dockerfile`, `docker-compose.vps.yml`)
+- Deploy script with DB backup and healthcheck (`scripts/deploy_vps.sh`)
+- GitHub Actions workflow added (`.github/workflows/deploy.yml`)
 
-### CI/CD
+## 3) Stage & Module Status (1–13 + extras)
 
-- Added workflow: `.github/workflows/deploy.yml`.
-- Added VPS deploy script with DB backup and health check:
-  - `scripts/deploy_vps.sh`.
+- Stage 1 (Auth): implemented, hardened (rate-limit, validation, session stability patches).
+- Stage 2 (Memory): implemented, input validation improved.
+- Stage 3 (Smart Home): implemented.
+- Stage 4 (Dashboard): implemented.
+- Stage 5 (Payments): implemented (MVP checkout simulation).
+- Stage 6 (Finance): implemented.
+- Stage 7 (Voice): implemented (persona/emotion + TTS fallback path).
+- Stage 8 (Agents): implemented.
+- Stage 9 (Guardian): implemented, scan constraints improved.
+- Stage 10 (Profile/security): implemented.
+- Stage 11 (Proactive): implemented.
+- Stage 12 (DIY Hub): implemented.
+- Stage 13 (Quantum/HPC router): implemented (`app/quantum_router.py`).
 
-## 4. Technical Debt and Risks
+Extra modules:
+- JARVIS-style persona: implemented at persona/style level (`jarvis` mode), not legal 1:1 movie voice clone.
+- Yandex SpeechKit integration: key-ready + fallback behavior.
+- PQC/HPC route selection: implemented adapter-level.
+- Wearables/Gen APIs/advanced integrations: env/config-ready, business logic partial.
 
-- Core backend is still a monolith (`app/main.py`), needs modular split.
-- SQLite is still core production datastore in code path; PostgreSQL integration is currently **connectivity-level**, not full storage migration.
-- Redis is currently **connectivity-level**, not used as cache/session bus in business flow.
-- Voice identification is heuristic hash MVP, not true biometric voiceprint (Vosk/SpeechKit speaker model pending).
-- Yandex SpeechKit call is fallback-safe but requires production key management and usage limits.
-- Vision/AR/Digital Twin remain incomplete stubs.
-- GitHub Actions deploy assumes secrets and server folder structure already prepared.
+## 4) Findings by Severity
 
-## 5. API Keys Matrix
+### Critical (fixed)
+1. No brute-force protection for login endpoint.
+2. Guardian scan could be abused for non-local host probing.
+3. CORS default was permissive wildcard.
+4. Session instability risk on mobile/network failures in frontend API layer.
 
-Keys are now supported via runtime config (`/api/v1/config/update`) and env:
+### Important (fixed)
+1. Missing centralized frontend test server setup; flaky/unhandled network requests.
+2. Outdated tests mismatched with current UI/login semantics.
+3. Missing lint/type tooling in repo (`eslint`, config).
+4. Missing production-grade docs/readme and CI workflow placement.
+5. Docker service lacked resource limits.
 
-- Quantum:
-  - `QUANTUM_RINGS_TOKEN` → `app/quantum_router.py`, `app/main.py /api/v1/quantum/route`.
-- Yandex Cloud:
-  - `YANDEX_FOLDER_ID`, `YANDEX_API_KEY` → `app/main.py` `synthesize_tts`.
-- OSINT:
-  - `CENSYS_API_ID`, `CENSYS_API_SECRET`, `SHODAN_API_KEY`, `APIFY_API_TOKEN` → registered in runtime config (ready for endpoint wiring).
-- Payments:
-  - `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` → runtime config ready (current checkout is demo).
-- Wearables:
-  - `GOOGLE_FIT_CLIENT_ID`, `GOOGLE_FIT_CLIENT_SECRET` → runtime config ready.
-- Generation:
-  - `REPLICATE_API_TOKEN`, `HUGGINGFACE_API_TOKEN` → runtime config ready.
-- Optional:
-  - `ELEVENLABS_API_KEY`, `PLANET_API_KEY` → runtime config ready.
-- Infra:
-  - `DATABASE_URL`, `REDIS_URL`, `HPC_UNICORE_URL`, `HPC_UNICORE_USER`, `HPC_UNICORE_PASSWORD`.
+### Cosmetic/maintenance (fixed)
+1. Typing cleanup for `mypy`.
+2. Minor unused imports/vars and empty catch blocks.
+3. Env templates improved and sanitized.
 
-## 6. Validation Performed
+## 5) Implemented Fixes (by area)
 
-- Backend syntax check:
-  - `python3 -m py_compile app/main.py app/quantum_router.py` ✅
-- Backend smoke test via `TestClient` for new endpoints:
-  - auth/register/login, profile preferences, proactive, DIY, voice profiles, guardian, quantum route ✅
-- Frontend production build:
-  - `npm run build` ✅
-- Pytest:
-  - `python3 -m pytest -q` returned **no tests ran** (no backend pytest suite in repo currently).
+### Backend hardening
+- `app/main.py`
+  - Added login rate limiting:
+    - `AURION_LOGIN_RATE_LIMIT_ATTEMPTS`
+    - `AURION_LOGIN_RATE_LIMIT_WINDOW_SECONDS`
+    - `AURION_LOGIN_RATE_LIMIT_BLOCK_SECONDS`
+  - Added register payload validation:
+    - email format, username pattern, password max length.
+  - Added auth artifacts cleanup:
+    - expired refresh tokens, stale 2FA challenges.
+  - Added SQLite indices for high-frequency queries.
+  - Added memory content validation (empty/too long).
+  - Added Guardian private-host restriction (`localhost`/private IP only).
+  - Added security headers middleware:
+    - `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `HSTS`.
+  - Switched CORS fallback from `*` to safe defaults.
+  - Fixed typing/nullability issues for `mypy`.
 
-## 7. Remaining Work Before Mass Production
+- `api/index.py`
+  - Export marker for `app` (`__all__`) to satisfy static checks.
 
-1. Move core storage from SQLite to PostgreSQL (data model + migrations).
-2. Introduce Redis for sessions/rate-limits/caching.
-3. Replace demo payments with YooKassa full flow (webhooks + idempotency).
-4. Implement true voice biometrics (Vosk or Yandex speaker-id pipeline).
-5. Add production observability (Sentry + metrics + alerting).
-6. Finalize DNS + public API route with stable TLS endpoint.
+### Frontend stability
+- `src/services/api.ts`
+  - Added fallback retry from external base URL to same-origin `/api/v1` for network failures.
+  - Refresh-token flow now retries via fallback base on transport errors.
+  - Token cleanup now removes auth keys only.
+
+- `src/store/authStore.ts`
+  - Logout no longer wipes all `localStorage`; only auth tokens.
+
+- `src/pages/Dashboard/DashboardPage.tsx`
+  - Safe guard for `scrollIntoView` availability.
+
+### Test infrastructure and tests
+- `src/tests/setup.ts`, `src/tests/server.ts`, `src/tests/handlers.ts`
+  - Centralized MSW lifecycle.
+  - Added robust endpoint handlers (auth/payments/memory/devices/system + preflight).
+  - Added test polyfills and storage cleanup.
+- Updated tests to match current app behavior:
+  - `AuthForm.test.tsx`
+  - `Dashboard.test.tsx`
+  - `DeviceCard.test.tsx`
+  - `MemoryList.test.tsx`
+  - `MemoryPage.test.tsx`
+  - `PaymentsPage.test.tsx`
+  - `SubscriptionPage.test.tsx`
+
+### Infra & CI/CD
+- Added real workflow file: `.github/workflows/deploy.yml`
+  - test job (pytest + vitest + build)
+  - deploy backend/frontend jobs to VPS via SSH.
+- Hardened deploy script: `scripts/deploy_vps.sh`
+  - required binary checks
+  - configurable health URL
+  - deploy failure logs.
+- `docker-compose.vps.yml`
+  - added `mem_limit` and `cpus`.
+- `Dockerfile`
+  - switched to non-root runtime user (`appuser`).
+
+### Docs/config
+- Added `README.md` (run/test/deploy/env guidance).
+- Updated `.env.example` and `.env.production` templates:
+  - added security/rate-limit/runtime keys
+  - sanitized defaults/placeholders.
+
+## 6) API Keys Matrix (used in code)
+
+- Quantum/HPC:
+  - `QUANTUM_RINGS_TOKEN`, `HPC_UNICORE_URL`, `HPC_UNICORE_USER`, `HPC_UNICORE_PASSWORD`
+  - Usage: `app/main.py` `/api/v1/quantum/route`, `app/quantum_router.py`
+- Yandex:
+  - `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`
+  - Usage: `synthesize_tts()` in `app/main.py`
+- Integrations runtime keys exposed/updated via:
+  - `/api/v1/config`, `/api/v1/config/update`
+  - Key set includes OSINT/payments/wearables/generation/infra keys.
+
+## 7) Verification Commands and Results
+
+Executed:
+
+```bash
+python3 -m pytest -q
+python3 -m ruff check .
+python3 -m mypy app tests
+npm run lint
+npm run test
+npm run build
+```
+
+Results:
+- `pytest`: **4 passed**
+- `ruff`: **All checks passed**
+- `mypy`: **Success, no issues**
+- `eslint`: **passed**
+- `vitest`: **7 files passed, 23 tests passed**
+- `vite build`: **passed**
+
+## 8) Unresolved / Needs Manual Input
+
+1. Production secrets still need final values in hosting secret stores (Railway/Vercel/VPS/GitHub Secrets).
+2. True zero-downtime (blue/green) is not fully implemented due current single-service port binding model.
+3. Backend still monolithic in `app/main.py`; recommended modularization remains.
+4. Core DB is SQLite; PostgreSQL is currently integration-check level, not primary storage migration.
+5. Vitest emits React Router/`act(...)` warnings (tests pass, but warning cleanup is a separate UX-quality task).
+
+## 9) Recommendations (next iteration)
+
+1. Split backend into layered modules (`api/services/repositories`) and add Alembic migrations.
+2. Move auth/session/caching concerns to Redis + server-side revocation strategy.
+3. Implement proper blue/green deploy flow (two compose stacks + switch proxy upstream).
+4. Add observability stack (structured logs, traces, error alerts).
+5. Gradually tighten ESLint rules after cleanup sprint.
