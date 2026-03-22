@@ -9,7 +9,7 @@ import os
 from typing import Optional, Dict, Any, List
 import json
 import numpy as np
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time as dt_time
 import aiohttp
 from fastapi import Depends
 
@@ -24,6 +24,16 @@ TTS_PROVIDERS = {
         "similarity_boost": 0.85,
         "style": 0.5,
         "use_speaker_boost": True
+    },
+    "elevenlabs_whisper": {
+        "api_key": os.getenv("ELEVENLABS_API_KEY"),
+        "voice_id": "pNInz6obpgDQGcFmaJgB",  # Adam - мягкий голос для шепота
+        "model_id": "eleven_multilingual_v2",
+        "quality": "high",
+        "stability": 0.95,      # Очень стабильно для шепота
+        "similarity_boost": 0.85,
+        "style": 0.1,           # Минимальная эмоциональность
+        "use_speaker_boost": False  # Без усиления для шепота
     },
     "azure": {
         "api_key": os.getenv("AZURE_SPEECH_KEY"),
@@ -98,6 +108,16 @@ class VoiceJarvisStandalone:
         self.stt_provider = os.getenv("STT_PROVIDER", "openai")
         self.llm_provider = os.getenv("LLM_PROVIDER", "openai")
         
+        # 🤫 WHISPER MODE - новая революционная функция
+        self.voice_mode = "normal"  # normal, whisper, soft, energetic
+        self.whisper_triggers = [
+            "спать", "ночь", "отдых", "тихо", "шепот",
+            "секрет", "конфиденциально", "поздно", "не буди",
+            "устал", "сони", "дрмота", "починяю"
+        ]
+        self.night_hours_start = 22  # 22:00
+        self.night_hours_end = 6     # 06:00
+        
         # 🏆 ЗОЛОТОЙ СТАНДАРТ: Настройка OpenAI
         if LLM_PROVIDERS["openai"]["api_key"]:
             openai.api_key = LLM_PROVIDERS["openai"]["api_key"]
@@ -156,6 +176,55 @@ class VoiceJarvisStandalone:
 
 Отвечай естественно, как живой ассистент, а не робот.
 """
+    
+    # 🤫 WHISPER MODE - революционные функции
+    def detect_whisper_context(self, text: str, user_context: Optional[Dict] = None) -> bool:
+        """Определяет, нужно ли говорить шепотом"""
+        current_hour = datetime.now().hour
+        
+        # Автоопределение по времени
+        if current_hour >= self.night_hours_start or current_hour <= self.night_hours_end:
+            return True
+            
+        # Проверка триггеров в тексте
+        text_lower = text.lower()
+        for trigger in self.whisper_triggers:
+            if trigger in text_lower:
+                return True
+                
+        # Контекст пользователя
+        if user_context:
+            if user_context.get("tired", False):
+                return True
+            if user_context.get("sleep_mode", False):
+                return True
+                
+        return False
+    
+    def set_voice_mode(self, mode: str) -> None:
+        """Устанавливает режим голоса"""
+        valid_modes = ["normal", "whisper", "soft", "energetic"]
+        if mode in valid_modes:
+            self.voice_mode = mode
+            print(f"🎤 Voice mode changed to: {mode}")
+        else:
+            print(f"❌ Invalid voice mode: {mode}")
+    
+    def get_current_provider_config(self) -> Dict[str, Any]:
+        """Получает текущую конфигурацию TTS провайдера"""
+        if self.voice_mode == "whisper":
+            return TTS_PROVIDERS.get("elevenlabs_whisper", TTS_PROVIDERS["elevenlabs"])
+        elif self.voice_mode == "soft":
+            soft_config = TTS_PROVIDERS["elevenlabs"].copy()
+            soft_config.update({
+                "stability": 0.85,
+                "similarity_boost": 0.75,
+                "style": 0.3,
+                "use_speaker_boost": False
+            })
+            return soft_config
+        else:
+            return TTS_PROVIDERS[self.tts_provider]
     
     async def speech_to_text(self, audio_data: bytes) -> Optional[str]:
         """🏆 ЗОЛОТОЙ СТАНДАРТ: Преобразование речи в текст"""
@@ -228,9 +297,19 @@ class VoiceJarvisStandalone:
             print(f"Yandex STT Error: {e}")
             return None
     
-    async def generate_response(self, user_input: str, context: Optional[List[Dict]] = None) -> str:
-        """🏆 ЗОЛОТОЙ СТАНДАРТ: Генерация ответа с помощью LLM"""
+    async def generate_response(self, user_input: str, context: Optional[List[Dict]] = None, user_context: Optional[Dict] = None) -> str:
+        """🏆 ЗОЛОТОЙ СТАНДАРТ: Генерация ответа с помощью LLM и автоопределением шепота"""
         try:
+            # 🤫 Автоопределение режима шепота
+            if self.detect_whisper_context(user_input, user_context):
+                if self.voice_mode != "whisper":
+                    self.set_voice_mode("whisper")
+                    print("🤫 Auto-switched to whisper mode")
+            elif self.voice_mode == "whisper" and not self.detect_whisper_context(user_input, user_context):
+                # Возвращаем в нормальный режим если контекст изменился
+                self.set_voice_mode("normal")
+                print("🎤 Auto-switched back to normal mode")
+            
             if self.llm_provider == "openai":
                 return await self._llm_openai(user_input, context)
             elif self.llm_provider == "anthropic":
@@ -349,7 +428,7 @@ class VoiceJarvisStandalone:
             return "Извините, я временно недоступен. Попробуйте позже."
     
     async def text_to_speech(self, text: str) -> Optional[bytes]:
-        """🏆 ЗОЛОТОЙ СТАНДАРТ: Преобразование текста в речь"""
+        """🏆 ЗОЛОТОЙ СТАНДАРТ: Преобразование текста в речь с поддержкой шепота"""
         try:
             if self.tts_provider == "elevenlabs":
                 return await self._tts_elevenlabs(text)
@@ -364,23 +443,27 @@ class VoiceJarvisStandalone:
             return None
     
     async def _tts_elevenlabs(self, text: str) -> Optional[bytes]:
-        """🏆 ЗОЛОТОЙ СТАНДАРТ: ElevenLabs TTS"""
+        """🏆 ЗОЛОТОЙ СТАНДАРТ: ElevenLabs TTS с поддержкой шепота"""
         try:
-            url = f"https://api.elevenlabs.io/v1/text-to-speech/{TTS_PROVIDERS['elevenlabs']['voice_id']}"
+            # 🤫 Получаем конфигурацию в зависимости от режима голоса
+            provider_config = self.get_current_provider_config()
+            voice_id = provider_config["voice_id"]
+            
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
             
             headers = {
-                "xi-api-key": TTS_PROVIDERS["elevenlabs"]["api_key"],
+                "xi-api-key": provider_config["api_key"],
                 "Content-Type": "application/json"
             }
             
             data = {
                 "text": text,
-                "model_id": TTS_PROVIDERS["elevenlabs"]["model_id"],
+                "model_id": provider_config["model_id"],
                 "voice_settings": {
-                    "stability": TTS_PROVIDERS["elevenlabs"]["stability"],
-                    "similarity_boost": TTS_PROVIDERS["elevenlabs"]["similarity_boost"],
-                    "style": TTS_PROVIDERS["elevenlabs"]["style"],
-                    "use_speaker_boost": TTS_PROVIDERS["elevenlabs"]["use_speaker_boost"]
+                    "stability": provider_config["stability"],
+                    "similarity_boost": provider_config["similarity_boost"],
+                    "style": provider_config["style"],
+                    "use_speaker_boost": provider_config["use_speaker_boost"]
                 }
             }
             
@@ -425,7 +508,7 @@ class VoiceJarvisStandalone:
             return None
     
     async def _tts_yandex(self, text: str) -> Optional[bytes]:
-        """🏆 ЗОЛОТОЙ СТАНДАРТ: Yandex TTS"""
+        """🏆 ЗОЛОТОЙ СТАНДАРТ: Yandex TTS с поддержкой шепота"""
         try:
             url = "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize"
             
@@ -434,12 +517,25 @@ class VoiceJarvisStandalone:
                 "Content-Type": "application/x-www-form-urlencoded"
             }
             
+            # 🤫 Адаптируем параметры для шепота
+            emotion = "good"
+            speed = 1.0
+            
+            if self.voice_mode == "whisper":
+                emotion = "neutral"
+                speed = 0.8  # Медленнее для шепота
+            elif self.voice_mode == "soft":
+                emotion = "gentle"
+                speed = 0.9
+            
             data = {
                 "text": text,
                 "voice": TTS_PROVIDERS["yandex"]["voice"],
                 "folderId": TTS_PROVIDERS["yandex"]["folder_id"],
                 "format": TTS_PROVIDERS["yandex"]["format"],
-                "sampleRateHertz": TTS_PROVIDERS["yandex"]["sampleRateHertz"]
+                "sampleRateHertz": TTS_PROVIDERS["yandex"]["sampleRateHertz"],
+                "emotion": emotion,
+                "speed": speed
             }
             
             async with aiohttp.ClientSession() as session:
@@ -453,29 +549,65 @@ class VoiceJarvisStandalone:
             print(f"Yandex TTS Error: {e}")
             return None
     
-    async def process_voice_message(self, audio_data: bytes, context: Optional[List[Dict]] = None) -> Optional[Dict[str, Any]]:
-        """🏆 ЗОЛОТОЙ СТАНДАРТ: Полная обработка голосового сообщения"""
+    async def process_voice_message(self, audio_data: bytes, context: Optional[List[Dict]] = None, user_context: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
+        """🏆 ЗОЛОТОЙ СТАНДАРТ: Полная обработка голосового сообщения с поддержкой шепота"""
         try:
             # 1. Распознавание речи
             user_text = await self.speech_to_text(audio_data)
             if not user_text:
                 return {"error": "Не удалось распознать речь"}
             
-            # 2. Генерация ответа
-            jarvis_response = await self.generate_response(user_text, context)
+            # 2. Генерация ответа с автоопределением шепота
+            jarvis_response = await self.generate_response(user_text, context, user_context)
             
-            # 3. Синтез речи
+            # 3. Синтез речи с учетом режима
             audio_response = await self.text_to_speech(jarvis_response)
             
             return {
                 "user_text": user_text,
                 "jarvis_text": jarvis_response,
                 "audio_response": audio_response,
+                "voice_mode": self.voice_mode,  # 🤫 Добавляем информацию о режиме
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
         except Exception as e:
             print(f"Voice processing error: {e}")
             return {"error": f"Ошибка обработки голоса: {str(e)}"}
+    
+    # 🤫 DOPOЛНИТЕЛЬНЫЕ WHISPER ФУНКЦИИ
+    async def speak_whisper(self, text: str) -> Optional[bytes]:
+        """Принудительно говорит шепотом"""
+        original_mode = self.voice_mode
+        self.set_voice_mode("whisper")
+        try:
+            result = await self.text_to_speech(text)
+            return result
+        finally:
+            self.set_voice_mode(original_mode)
+    
+    async def speak_soft(self, text: str) -> Optional[bytes]:
+        """Принудительно говорит мягко"""
+        original_mode = self.voice_mode
+        self.set_voice_mode("soft")
+        try:
+            result = await self.text_to_speech(text)
+            return result
+        finally:
+            self.set_voice_mode(original_mode)
+    
+    def get_voice_status(self) -> Dict[str, Any]:
+        """Получает текущий статус голосовой системы"""
+        current_hour = datetime.now().hour
+        is_night_time = current_hour >= self.night_hours_start or current_hour <= self.night_hours_end
+        
+        return {
+            "current_mode": self.voice_mode,
+            "is_night_time": is_night_time,
+            "night_hours": f"{self.night_hours_start}:00 - {self.night_hours_end}:00",
+            "available_modes": ["normal", "whisper", "soft", "energetic"],
+            "auto_whisper_enabled": True,
+            "current_hour": current_hour
+        }
     
     def get_conversation_context(self, limit: int = 10) -> List[Dict]:
         """🏆 ЗОЛОТОЙ СТАНДАРТ: Получение контекста разговора"""

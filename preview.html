@@ -18,6 +18,35 @@
             animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
+    <style>
+        /* Fix 1: Convert @apply to regular CSS since CDN Tailwind doesn't process it */
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #d1d5db;
+        }
+        .nav-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .nav-btn.active {
+            background: linear-gradient(to right, #3b82f6, #9333ea);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .module {
+            transition: all 0.3s;
+        }
+        /* Fix 2: Add missing hidden class definition */
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
     <!-- Header -->
@@ -382,18 +411,6 @@
             </div>
         </div>
     </main>
-
-    <style>
-        .nav-btn {
-            @apply flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap bg-white/10 text-gray-300 hover:bg-white/20;
-        }
-        .nav-btn.active {
-            @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg;
-        }
-        .module {
-            @apply transition-all duration-300;
-        }
-    </style>
 
     <script>
         // Navigation functionality
