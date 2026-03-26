@@ -1,5 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
+const AUTH_UPDATED_EVENT = 'aurion-auth-updated'
+const AUTH_CLEARED_EVENT = 'aurion-auth-cleared'
+
 function normalizeApiBase(rawBase?: string): string {
   const trimmed = rawBase?.trim().replace(/\/+$/, '')
   if (!trimmed) return '/api/v1'
@@ -14,6 +17,33 @@ const FALLBACK_BASE_URL = '/api/v1'
 function clearAuthTokens() {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_CLEARED_EVENT))
+  }
+}
+
+function notifyAuthTokensUpdated(accessToken: string, refreshToken: string) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_UPDATED_EVENT, {
+      detail: { accessToken, refreshToken },
+    }))
+  }
+}
+
+function isHardAuthFailure(error: AxiosError): boolean {
+  const status = error.response?.status ?? 0
+  if (![400, 401].includes(status)) return false
+
+  const detail = String(
+    (error.response?.data as { detail?: unknown } | undefined)?.detail ?? ''
+  ).toLowerCase()
+
+  return (
+    detail.includes('invalid refresh') ||
+    detail.includes('refresh token') ||
+    detail.includes('expired') ||
+    detail.includes('signature')
+  )
 }
 
 export const api = axios.create({
@@ -106,6 +136,7 @@ api.interceptors.response.use(
       }
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('refresh_token', data.refresh_token)
+      notifyAuthTokensUpdated(data.access_token, data.refresh_token)
       queue.forEach((item) => {
         item.original.headers = item.original.headers ?? {}
         item.original.headers.Authorization = `Bearer ${data.access_token}`
@@ -116,9 +147,8 @@ api.interceptors.response.use(
       return api(original)
     } catch (refreshError) {
       queue.forEach((item) => item.reject(refreshError))
-      if (axios.isAxiosError(refreshError) && [400, 401].includes(refreshError.response?.status ?? 0)) {
+      if (axios.isAxiosError(refreshError) && isHardAuthFailure(refreshError)) {
         clearAuthTokens()
-        window.location.href = '/auth/login'
       }
       return Promise.reject(refreshError)
     } finally {
@@ -127,3 +157,5 @@ api.interceptors.response.use(
     }
   }
 )
+
+export { AUTH_CLEARED_EVENT, AUTH_UPDATED_EVENT }

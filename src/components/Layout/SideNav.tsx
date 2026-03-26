@@ -1,8 +1,10 @@
+import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Brain, Home, Shield, Cpu,
   CreditCard, User, LogOut, Lock, Wrench,
-  HeartPulse, Workflow, BellRing, MessagesSquare, Headphones
+  HeartPulse, Workflow, BellRing, MessagesSquare, Headphones,
+  Camera
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -12,6 +14,7 @@ import styles from './SideNav.module.css'
 
 const NAV = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Главная',   feature: null },
+  { to: '/ar',        icon: Camera,          label: 'AR Режим',    feature: null },
   { to: '/memory',    icon: Brain,           label: 'Память',     feature: null },
   { to: '/home',      icon: Home,            label: 'Умный дом',  feature: null },
   { to: '/autonomy',  icon: Cpu,             label: 'Агенты',     feature: 'agents' },
@@ -31,6 +34,7 @@ export function SideNav() {
   const { hasFeature } = useSubscription()
   const { warning } = useToast()
   const navigate = useNavigate()
+  const isPrivileged = user?.role === 'creator' || user?.role === 'admin'
 
   const handleLogout = async () => {
     await logout()
@@ -38,7 +42,8 @@ export function SideNav() {
   }
 
   const handleNav = (e: React.MouseEvent, feature: string | null) => {
-    if (feature && !hasFeature(feature)) {
+    if (!user) return
+    if (!isPrivileged && feature && !hasFeature(feature)) {
       e.preventDefault()
       warning(`Требуется Pro-подписка для доступа к этому модулю`)
     }
@@ -51,14 +56,14 @@ export function SideNav() {
         <CoreOrb size={36} />
         <div className={styles.logoText}>
           <span className={styles.logoMain}>AURION</span>
-          <span className={styles.logoSub}>OS v1.0</span>
+          <span className={styles.logoSub}>AUTONOMOUS AI OS</span>
         </div>
       </div>
 
       {/* Links */}
       <ul className={styles.links}>
         {NAV.map(({ to, icon: Icon, label, feature }) => {
-          const locked = !!(feature && !hasFeature(feature))
+          const locked = !!(user && !isPrivileged && feature && !hasFeature(feature))
           return (
             <li key={to}>
               <NavLink
