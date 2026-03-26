@@ -4,6 +4,7 @@
 import asyncio
 import io
 import base64
+import binascii
 import tempfile
 import os
 from typing import Optional, Dict, Any
@@ -24,7 +25,7 @@ try:
     import edge_tts
     EDGE_TTS_AVAILABLE = True
 except ImportError:
-    EDGE_TTS_AVAILABLE = True
+    EDGE_TTS_AVAILABLE = False
 
 # Redis для кэширования
 redis_client: Optional[redis.Redis] = None
@@ -287,14 +288,28 @@ class VoiceService:
         
         # Генерация TTS
         tts_audio = await self.text_to_speech(response_text, persona, emotion)
-        
+        has_audio = False
+        if isinstance(tts_audio, str) and len(tts_audio) > 32:
+            try:
+                base64.b64decode(tts_audio, validate=True)
+                has_audio = True
+            except (binascii.Error, ValueError):
+                has_audio = False
+        tts_payload = {
+            "provider": "edge-tts" if EDGE_TTS_AVAILABLE and has_audio else "browser-fallback",
+            "audio_b64": tts_audio if has_audio else None,
+            "mime_type": "audio/mpeg",
+            "emotion": emotion,
+            "persona": persona,
+        }
+
         # Отправка ответа
         await websocket.send_json({
             "type": "chat_response",
             "content": response_text,
             "emotion": emotion,
             "voice_persona": persona,
-            "tts": tts_audio,
+            "tts": tts_payload,
             "recognized_text": text if text != response_text else None
         })
     
