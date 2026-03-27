@@ -2,7 +2,6 @@
 Модель векторной памяти
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from typing import List, Optional
@@ -10,21 +9,20 @@ import uuid
 
 # Импортируем VECTOR из pgvector
 try:
-    from pgvector.sqlalchemy import VECTOR
+    from pgvector.sqlalchemy import VECTOR as PGVECTOR
 except ImportError:
-    # Заглушка если pgvector не установлен
-    class VECTOR:
-        def __init__(self, *args, **kwargs):
-            pass
+    PGVECTOR = None
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
+
+EMBEDDING_TYPE = PGVECTOR(384) if PGVECTOR is not None else JSONType
 
 
 class MemoryEntry(Base):
     __tablename__ = "memory_entries"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Контент
     content = Column(Text, nullable=False)
@@ -32,12 +30,12 @@ class MemoryEntry(Base):
     title = Column(String(500), nullable=True)
     
     # Векторное представление (pgvector)
-    embedding = Column(VECTOR(384), nullable=True)  # Для paraphrase-multilingual-MiniLM-L12-v2
+    embedding = Column(EMBEDDING_TYPE, nullable=True)  # Для paraphrase-multilingual-MiniLM-L12-v2
     
     # Метаданные
-    tags = Column(JSONB, default=list, nullable=True)
-    categories = Column(JSONB, default=list, nullable=True)
-    entry_metadata = Column(JSONB, default=dict, nullable=True)  # Переименовано из metadata
+    tags = Column(JSONType, default=list, nullable=True)
+    categories = Column(JSONType, default=list, nullable=True)
+    entry_metadata = Column(JSONType, default=dict, nullable=True)  # Переименовано из metadata
     
     # Важность и приоритет
     importance = Column(Integer, default=5, nullable=False)  # 1-10
@@ -45,10 +43,10 @@ class MemoryEntry(Base):
     
     # Эмоциональная окраска
     sentiment = Column(String(20), nullable=True)  # positive, negative, neutral
-    emotion = Column(JSONB, nullable=True)  # Детальные эмоции
+    emotion = Column(JSONType, nullable=True)  # Детальные эмоции
     
     # Контекст
-    context = Column(JSONB, nullable=True)  # Связанный контекст
+    context = Column(JSONType, nullable=True)  # Связанный контекст
     source = Column(String(100), nullable=True)  # Источник: chat, voice, manual, etc.
     
     # Временные метки
