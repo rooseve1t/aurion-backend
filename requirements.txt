@@ -28,6 +28,8 @@ cryptography==41.0.7
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.6
+qrcode[pil]==7.4.2
+pyotp==2.9.0
 
 # Cache & Messaging
 redis==5.0.1
@@ -48,7 +50,7 @@ pytz==2023.3
 click==8.1.7
 rich==13.7.0
 requests==2.31.0
-orjson==3.9.10
+orjson==3.10.12
 
 # Telegram bot
 python-telegram-bot==20.7
