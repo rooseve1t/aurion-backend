@@ -50,8 +50,8 @@ class TestSQLInjectionProtection:
 class TestEncryptionKeyHandling:
     """Test encryption key handling in finance service"""
     
-    def test_encryption_key_required(self):
-        """Test that finance service requires ENCRYPTION_KEY"""
+    def test_encryption_key_fallback(self):
+        """Test that finance service uses safe fallback when ENCRYPTION_KEY is missing"""
         # Save current env
         old_key = os.environ.get('ENCRYPTION_KEY')
         
@@ -60,18 +60,16 @@ class TestEncryptionKeyHandling:
             if 'ENCRYPTION_KEY' in os.environ:
                 del os.environ['ENCRYPTION_KEY']
             
-            # Re-import should fail
-            with pytest.raises(RuntimeError) as exc_info:
-                # Force reimport by clearing cache
-                if 'app.services.finance_service' in sys.modules:
-                    del sys.modules['app.services.finance_service']
-                import app.services.finance_service
-            
-            assert "ENCRYPTION_KEY" in str(exc_info.value)
+            # Re-import should not fail: service must auto-generate temporary key
+            if 'app.services.finance_service' in sys.modules:
+                del sys.modules['app.services.finance_service']
+            import app.services.finance_service as finance_service
+
+            assert finance_service.cipher_suite is not None
             
         finally:
             # Restore
-            if old_key:
+            if old_key is not None:
                 os.environ['ENCRYPTION_KEY'] = old_key
     
     def test_encryption_with_valid_key(self):

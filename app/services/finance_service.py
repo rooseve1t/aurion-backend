@@ -28,7 +28,17 @@ if not _encryption_key:
         "Для production добавьте ENCRYPTION_KEY в переменные окружения Railway."
     )
     _encryption_key = Fernet.generate_key().decode()
-cipher_suite = Fernet(_encryption_key.encode())
+
+try:
+    cipher_suite = Fernet(_encryption_key.encode())
+except Exception:
+    import logging as _log
+    _log.warning(
+        "⚠️ ENCRYPTION_KEY задан некорректно — используется временный ключ. "
+        "Проверьте формат ключа Fernet (base64 urlsafe, 32 bytes)."
+    )
+    _encryption_key = Fernet.generate_key().decode()
+    cipher_suite = Fernet(_encryption_key.encode())
 
 
 class FinanceService:

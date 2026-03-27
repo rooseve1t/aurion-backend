@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     # CORS
-    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000,https://aurionai.ru"
+    ALLOWED_ORIGINS: str = (
+        "http://localhost:5173,http://localhost:3000,"
+        "https://aurionai.ru,https://www.aurionai.ru"
+    )
 
     # Database — SQLite для dev, PostgreSQL для prod
     DATABASE_URL: str = "sqlite+aiosqlite:///./aurion.db"

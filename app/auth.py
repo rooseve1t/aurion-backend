@@ -25,7 +25,23 @@ from .models.user import User
 logger = logging.getLogger("aurion-auth")
 
 # Конфигурация
-SECRET_KEY = os.getenv("AURION_SECRET_KEY", "aurion-default-secret-key-change-me")
+def _resolve_jwt_secret() -> str:
+    """
+    Единый источник секрета JWT.
+    Приоритет:
+    1) JWT_SECRET
+    2) AURION_SECRET_KEY (legacy)
+    3) безопасный dev fallback
+    """
+    secret = (
+        os.getenv("JWT_SECRET")
+        or os.getenv("AURION_SECRET_KEY")
+        or "aurion-default-secret-key-change-me"
+    )
+    return secret
+
+
+SECRET_KEY = _resolve_jwt_secret()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))

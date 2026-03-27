@@ -39,11 +39,19 @@ async def is_blacklisted(jti: str) -> bool:
         return False
 
 
+def _resolve_jwt_secret() -> str:
+    return (
+        os.getenv("JWT_SECRET")
+        or os.getenv("AURION_SECRET_KEY")
+        or "aurion-default-secret-key-change-me"
+    )
+
+
 def extract_jti(token: str) -> Optional[str]:
     """Извлечь jti из токена без проверки подписи"""
     try:
-        SECRET_KEY = os.getenv("JWT_SECRET", "change-me-in-production")
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        secret_key = _resolve_jwt_secret()
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
         return payload.get("jti") or payload.get("sub")  # fallback to sub if no jti
     except JWTError:
         return None

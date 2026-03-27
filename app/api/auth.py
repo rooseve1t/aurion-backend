@@ -25,14 +25,14 @@ from ..auth import (
     verify_password,
     revoke_refresh_token,
     get_user_by_id,
-    get_user_by_email
+    get_user_by_email,
+    SECRET_KEY
 )
 from ..models.user import User
 from ..middleware.auth_blacklist import add_to_blacklist
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timezone
 from jose import jwt as jose_jwt
-import os
 
 router = APIRouter(tags=["authentication"])
 
@@ -376,7 +376,6 @@ async def logout(
     # Добавить access token в blacklist
     if token:
         try:
-            SECRET_KEY = os.getenv("JWT_SECRET", "change-me-in-production")
             payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             jti = payload.get("jti") or payload.get("sub", "")
             exp = payload.get("exp", 0)
@@ -388,4 +387,3 @@ async def logout(
             pass
 
     return {"message": "Logged out successfully"}
-
