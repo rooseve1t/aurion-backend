@@ -19,13 +19,15 @@ from ..database_final import get_db
 # Redis для кэширования
 redis_client: Optional[redis.Redis] = None
 
-# Шифрование
+# Шифрование — автогенерация ключа если не задан (для dev/Railway без переменной)
 _encryption_key = os.getenv("ENCRYPTION_KEY")
 if not _encryption_key:
-    raise RuntimeError(
-        "ENCRYPTION_KEY environment variable must be set. "
-        "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    import logging as _log
+    _log.warning(
+        "⚠️ ENCRYPTION_KEY не задан — используется временный ключ. "
+        "Для production добавьте ENCRYPTION_KEY в переменные окружения Railway."
     )
+    _encryption_key = Fernet.generate_key().decode()
 cipher_suite = Fernet(_encryption_key.encode())
 
 
