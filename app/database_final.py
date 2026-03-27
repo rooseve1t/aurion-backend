@@ -41,8 +41,16 @@ class UUIDType(TypeDecorator):
 # URL базы данных
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "sqlite+aiosqlite:///./aurion.db"  # По умолчанию SQLite для простоты
+    "sqlite+aiosqlite:///./aurion.db"
 )
+
+# Railway и другие платформы передают postgresql:// без asyncpg — исправляем автоматически
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://") and "+asyncpg" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+logger.info(f"🗄️ Database driver: {'asyncpg' if 'asyncpg' in DATABASE_URL else 'aiosqlite'}")
 
 # Определяем JSON тип в зависимости от базы данных
 JSONType = PGJSONB if 'postgresql' in DATABASE_URL.lower() else JSON
