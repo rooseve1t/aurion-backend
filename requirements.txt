@@ -30,6 +30,7 @@ python-jose[cryptography]==3.3.0
 python-multipart==0.0.6
 qrcode[pil]==7.4.2
 pyotp==2.9.0
+email-validator==2.1.0
 
 # Cache & Messaging
 redis==5.0.1
