@@ -11,6 +11,7 @@ import os
 import logging
 from typing import AsyncGenerator
 from dotenv import load_dotenv
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -49,6 +50,29 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 elif DATABASE_URL.startswith("postgresql://") and "+asyncpg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+
+def _normalize_asyncpg_url(url: str) -> str:
+    """
+    Нормализация query-параметров для asyncpg.
+    Railway/Postgres часто передают `sslmode=require`, тогда как asyncpg
+    ожидает `ssl=require`.
+    """
+    if "postgresql+asyncpg://" not in url:
+        return url
+
+    parts = urlsplit(url)
+    params = dict(parse_qsl(parts.query, keep_blank_values=True))
+    sslmode = params.pop("sslmode", None)
+    if sslmode:
+        # asyncpg accepts ssl=require|prefer|disable
+        params.setdefault("ssl", sslmode)
+
+    normalized_query = urlencode(params)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, normalized_query, parts.fragment))
+
+
+DATABASE_URL = _normalize_asyncpg_url(DATABASE_URL)
 
 logger.info(f"🗄️ Database driver: {'asyncpg' if 'asyncpg' in DATABASE_URL else 'aiosqlite'}")
 
