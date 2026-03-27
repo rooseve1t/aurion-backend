@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
-from ..database import get_db
+from ..database_final import get_db
 from ..services.vpn_service import get_vpn_service, AurionVPNService
 from ..api.auth import get_current_user
 from ..models.user import User
 
-router = APIRouter(prefix="/api/v1/vpn", tags=["aurion-shield-vpn"])
+router = APIRouter(tags=["aurion-shield-vpn"])
 
 # Pydantic модели
 class VPNConnectRequest(BaseModel):
@@ -73,9 +73,24 @@ async def connect_vpn(
             }
         else:
             raise HTTPException(status_code=400, detail=result.get("error", "Ошибка подключения"))
-            
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка подключения: {str(e)}")
+
+
+@router.post("/connections")
+async def create_connection_compat(
+    request: VPNConnectRequest,
+    current_user: User = Depends(get_current_user),
+    vpn_service: AurionVPNService = Depends(get_vpn_service)
+) -> Dict[str, Any]:
+    """Backward-compatible alias for legacy clients."""
+    return await connect_vpn(
+        request=request,
+        current_user=current_user,
+        vpn_service=vpn_service,
+    )
 
 @router.post("/disconnect")
 async def disconnect_vpn(

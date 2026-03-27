@@ -1,0 +1,2355 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Aurion OS Design System - Enhanced from Stitch */
+
+/* ===== LIGHT THEME ===== */
+.aurion-theme-light {
+  /* Primary Colors */
+  --aurion-bg-primary: #ffffff;
+  --aurion-bg-surface: #f8f9fa;
+  --aurion-bg-surface-low: #e9ecef;
+  --aurion-bg-surface-high: #dee2e6;
+  
+  /* Accent Colors - slightly muted for light theme */
+  --aurion-cyan: #00b8b8;
+  --aurion-cyan-dim: #00a0a0;
+  --aurion-cyan-fixed: #00b8b8;
+  --aurion-purple: #9c88ff;
+  --aurion-purple-dim: #8b7dff;
+  --aurion-green: #00d68f;
+  --aurion-green-dim: #00c67f;
+  --aurion-error: #ff6b6b;
+  --aurion-warning: #ffa94d;
+  
+  /* Text Colors */
+  --aurion-text-primary: #212529;
+  --aurion-text-secondary: #495057;
+  --aurion-text-muted: #6c757d;
+  --aurion-text-dim: #adb5bd;
+  
+  /* Shadows - lighter for light theme */
+  --aurion-shadow-neon-cyan: 0 0 20px rgba(0, 184, 184, 0.15);
+  --aurion-shadow-neon-purple: 0 0 20px rgba(156, 136, 255, 0.15);
+  --aurion-shadow-orb: 0 0 15px rgba(0, 184, 184, 0.3);
+  --aurion-shadow-glass: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== DARK THEME (Default) ===== */
+:root,
+.aurion-theme-dark {
+  /* Primary Colors */
+  --aurion-bg-primary: #0a0a0a;
+  --aurion-bg-surface: #131313;
+  --aurion-bg-surface-low: #1c1b1b;
+  --aurion-bg-surface-high: #2a2a2a;
+  
+  /* Accent Colors */
+  --aurion-cyan: #00fbfb;
+  --aurion-cyan-dim: #00dddd;
+  --aurion-cyan-fixed: #00fbfb;
+  --aurion-purple: #d0bcff;
+  --aurion-purple-dim: #d0bcff;
+  --aurion-green: #4edea3;
+  --aurion-green-dim: #6ffbbe;
+  --aurion-error: #ff716c;
+  --aurion-warning: #ffb4ab;
+  
+  /* Text Colors */
+  --aurion-text-primary: #ffffff;
+  --aurion-text-secondary: #e5e2e1;
+  --aurion-text-muted: #b9cac9;
+  --aurion-text-dim: #839493;
+  
+  /* Shadows */
+  --aurion-shadow-neon-cyan: 0 0 40px rgba(0, 251, 251, 0.08);
+  --aurion-shadow-neon-purple: 0 0 40px rgba(208, 188, 255, 0.08);
+  --aurion-shadow-orb: 0 0 20px rgba(0, 251, 251, 0.4);
+  --aurion-shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  /* Typography */
+  --aurion-font-headline: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --aurion-font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --aurion-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Spacing */
+  --aurion-space-xs: 0.25rem;
+  --aurion-space-sm: 0.5rem;
+  --aurion-space-md: 1rem;
+  --aurion-space-lg: 1.5rem;
+  --aurion-space-xl: 2rem;
+  --aurion-space-2xl: 3rem;
+  
+  /* Border Radius */
+  --aurion-radius-sm: 0.125rem;
+  --aurion-radius-md: 0.25rem;
+  --aurion-radius-lg: 0.5rem;
+  --aurion-radius-xl: 0.75rem;
+  --aurion-radius-full: 9999px;
+  
+  /* Shadows */
+  --aurion-shadow-neon-cyan: 0 0 40px rgba(0, 251, 251, 0.08);
+  --aurion-shadow-neon-purple: 0 0 40px rgba(208, 188, 255, 0.08);
+  --aurion-shadow-orb: 0 0 20px rgba(0, 251, 251, 0.4);
+  --aurion-shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  /* Transitions */
+  --aurion-transition-fast: 150ms ease;
+  --aurion-transition-normal: 300ms ease;
+  --aurion-transition-slow: 500ms ease;
+}
+
+/* ===== RESET & BASE ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--aurion-font-body);
+  background: var(--aurion-bg-primary);
+  color: var(--aurion-text-secondary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== GLASSMORPHISM EFFECTS ===== */
+.aurion-glass {
+  background: rgba(53, 53, 52, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(58, 74, 73, 0.15);
+  border-radius: var(--aurion-radius-lg);
+}
+
+.aurion-glass-panel {
+  background: rgba(25, 25, 25, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(72, 72, 72, 0.15);
+  border-radius: var(--aurion-radius-lg);
+}
+
+/* ===== CORE ORB COMPONENT ===== */
+.aurion-orb {
+  background: radial-gradient(circle at 30% 30%, 
+    var(--aurion-cyan-fixed) 0%, 
+    var(--aurion-cyan) 40%, 
+    var(--aurion-purple) 100%);
+  box-shadow: var(--aurion-shadow-orb), 
+              inset -10px -10px 20px rgba(208, 188, 255, 0.5);
+  border-radius: var(--aurion-radius-full);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aurion-orb::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px solid var(--aurion-cyan);
+  border-radius: var(--aurion-radius-full);
+  opacity: 0.2;
+  animation: orb-pulse 3s ease-in-out infinite;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.2; }
+  50% { transform: scale(1.1); opacity: 0.4; }
+}
+
+/* ===== GRID BACKGROUND ===== */
+.aurion-grid-bg {
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ===== TYPOGRAPHY ===== */
+.aurion-headline {
+  font-family: var(--aurion-font-headline);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.aurion-mono {
+  font-family: var(--aurion-font-mono);
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.aurion-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--aurion-text-muted);
+}
+
+/* ===== INTERACTIVE STATES ===== */
+.aurion-interactive {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.aurion-interactive::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none;
+}
+
+.aurion-interactive:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Enhanced Button States */
+.aurion-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.aurion-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s, height 0.5s;
+  pointer-events: none;
+}
+
+.aurion-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 251, 251, 0.3);
+}
+
+.aurion-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.aurion-btn:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Enhanced Card States */
+.aurion-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.aurion-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 251, 251, 0.05),
+    transparent
+  );
+  transition: left 0.5s;
+  pointer-events: none;
+}
+
+.aurion-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: var(--aurion-cyan);
+  box-shadow: 0 12px 40px rgba(0, 251, 251, 0.15);
+}
+
+.aurion-card:hover::before {
+  left: 100%;
+}
+
+/* Input Focus States */
+.aurion-input {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aurion-input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(0, 251, 251, 0.1), 
+              0 0 20px rgba(0, 251, 251, 0.2);
+  border-color: var(--aurion-cyan);
+}
+
+.aurion-input:focus + .input-label {
+  color: var(--aurion-cyan);
+  transform: translateY(-20px) scale(0.85);
+}
+
+/* Loading States */
+.aurion-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurion-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 251, 251, 0.2),
+    transparent
+  );
+  animation: aurion-loading-shimmer 1.5s infinite;
+}
+
+@keyframes aurion-loading-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Pulse on Hover */
+.aurion-pulse-hover {
+  transition: all 0.3s ease;
+}
+
+.aurion-pulse-hover:hover {
+  animation: aurion-pulse-hover 1s ease-in-out infinite;
+}
+
+@keyframes aurion-pulse-hover {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 0 0 rgba(0, 251, 251, 0.4);
+  }
+  50% { 
+    transform: scale(1.05); 
+    box-shadow: 0 0 20px 10px rgba(0, 251, 251, 0);
+  }
+}
+
+/* Glow on Hover */
+.aurion-glow-hover {
+  transition: all 0.3s ease;
+}
+
+.aurion-glow-hover:hover {
+  box-shadow: 0 0 30px rgba(0, 251, 251, 0.4);
+  border-color: var(--aurion-cyan);
+}
+
+/* Shake Animation */
+.aurion-shake {
+  animation: aurion-shake 0.5s ease-in-out;
+}
+
+@keyframes aurion-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+/* Bounce Animation */
+.aurion-bounce {
+  animation: aurion-bounce 0.6s ease-in-out;
+}
+
+@keyframes aurion-bounce {
+  0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
+  40%, 43% { transform: translateY(-8px); }
+  70% { transform: translateY(-4px); }
+  90% { transform: translateY(-2px); }
+}
+
+/* Slide In Animation */
+.aurion-slide-in {
+  animation: aurion-slide-in 0.4s ease-out;
+}
+
+@keyframes aurion-slide-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+/* Scale In Animation */
+.aurion-scale-in {
+  animation: aurion-scale-in 0.3s ease-out;
+}
+
+@keyframes aurion-scale-in {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+
+/* Interactive Link States */
+.aurion-link {
+  position: relative;
+  color: var(--aurion-cyan);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.aurion-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--aurion-cyan);
+  transition: width 0.3s ease;
+}
+
+.aurion-link:hover::after {
+  width: 100%;
+}
+
+.aurion-link:hover {
+  color: var(--aurion-cyan-dim);
+  text-shadow: 0 0 10px rgba(0, 251, 251, 0.5);
+}
+
+/* Toggle Switch Enhancement */
+.aurion-toggle {
+  position: relative;
+  width: 48px;
+  height: 24px;
+  background: var(--aurion-bg-surface-high);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.aurion-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--aurion-text-muted);
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aurion-toggle.active {
+  background: var(--aurion-cyan);
+}
+
+.aurion-toggle.active::after {
+  transform: translateX(24px);
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 251, 251, 0.5);
+}
+
+/* Progress Bar Enhancement */
+.aurion-progress {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurion-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: aurion-progress-shine 2s infinite;
+}
+
+@keyframes aurion-progress-shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Checkbox Enhancement */
+.aurion-checkbox {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--aurion-text-dim);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.aurion-checkbox.checked {
+  background: var(--aurion-cyan);
+  border-color: var(--aurion-cyan);
+}
+
+.aurion-checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  animation: aurion-checkbox-check 0.3s ease;
+}
+
+@keyframes aurion-checkbox-check {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Radio Button Enhancement */
+.aurion-radio {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--aurion-text-dim);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.aurion-radio.checked {
+  border-color: var(--aurion-cyan);
+}
+
+.aurion-radio.checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: var(--aurion-cyan);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: aurion-radio-check 0.3s ease;
+}
+
+@keyframes aurion-radio-check {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.3); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Tooltip Enhancement */
+.aurion-tooltip {
+  position: relative;
+}
+
+.aurion-tooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--aurion-bg-surface-high);
+  color: var(--aurion-text-secondary);
+  border: 1px solid var(--aurion-text-dim);
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.aurion-tooltip:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* Badge Enhancement */
+.aurion-badge {
+  position: relative;
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--aurion-cyan);
+  color: var(--aurion-bg-primary);
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: aurion-badge-appear 0.3s ease;
+}
+
+@keyframes aurion-badge-appear {
+  0% { 
+    transform: scale(0); 
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.1); 
+  }
+  100% { 
+    transform: scale(1); 
+    opacity: 1;
+  }
+}
+
+/* ===== ADVANCED ICON ANIMATIONS ===== */
+.aurion-float {
+  animation: aurion-float 3s ease-in-out infinite;
+}
+
+@keyframes aurion-float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+.aurion-rotate {
+  animation: aurion-rotate 4s linear infinite;
+}
+
+@keyframes aurion-rotate {
+  from { 
+    transform: rotate(0deg); 
+  }
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+.aurion-scale {
+  animation: aurion-scale 2s ease-in-out infinite;
+}
+
+@keyframes aurion-scale {
+  0%, 100% { 
+    transform: scale(1); 
+  }
+  50% { 
+    transform: scale(1.1); 
+  }
+}
+
+.aurion-slide {
+  animation: aurion-slide 3s ease-in-out infinite;
+}
+
+@keyframes aurion-slide {
+  0%, 100% { 
+    transform: translateX(0px); 
+  }
+  25% { 
+    transform: translateX(5px); 
+  }
+  75% { 
+    transform: translateX(-5px); 
+  }
+}
+
+/* Icon specific animations */
+.aurion-icon-glow {
+  animation: aurion-icon-glow 2s ease-in-out infinite;
+}
+
+@keyframes aurion-icon-glow {
+  0%, 100% { 
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+  50% { 
+    filter: drop-shadow(0 0 20px currentColor);
+  }
+}
+
+.aurion-icon-bounce {
+  animation: aurion-icon-bounce 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-icon-bounce {
+  0%, 20%, 53%, 80%, 100% { 
+    transform: translateY(0); 
+  }
+  40%, 43% { 
+    transform: translateY(-8px); 
+  }
+  70% { 
+    transform: translateY(-4px); 
+  }
+  90% { 
+    transform: translateY(-2px); 
+  }
+}
+
+.aurion-icon-shake {
+  animation: aurion-icon-shake 0.5s ease-in-out;
+}
+
+@keyframes aurion-icon-shake {
+  0%, 100% { 
+    transform: translateX(0) rotate(0deg); 
+  }
+  10%, 30%, 50%, 70%, 90% { 
+    transform: translateX(-2px) rotate(-5deg); 
+  }
+  20%, 40%, 60%, 80% { 
+    transform: translateX(2px) rotate(5deg); 
+  }
+}
+
+/* Radar sweep animation */
+.aurion-radar-sweep {
+  animation: aurion-radar-sweep 3s linear infinite;
+}
+
+@keyframes aurion-radar-sweep {
+  from { 
+    transform: rotate(0deg); 
+  }
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+/* Pulse ring animation */
+.aurion-pulse-ring {
+  animation: aurion-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes aurion-pulse-ring {
+  0% { 
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Wave animation for connection bars */
+.aurion-wave-bars {
+  animation: aurion-wave-bars 1s ease-in-out infinite;
+}
+
+@keyframes aurion-wave-bars {
+  0%, 100% { 
+    transform: scaleY(1); 
+  }
+  50% { 
+    transform: scaleY(0.5); 
+  }
+}
+
+/* Breathing animation */
+.aurion-breathe {
+  animation: aurion-breathe 4s ease-in-out infinite;
+}
+
+@keyframes aurion-breathe {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Morphing animation */
+.aurion-morph {
+  animation: aurion-morph 3s ease-in-out infinite;
+}
+
+@keyframes aurion-morph {
+  0%, 100% { 
+    border-radius: 50%;
+    transform: rotate(0deg);
+  }
+  25% { 
+    border-radius: 20%;
+    transform: rotate(90deg);
+  }
+  50% { 
+    border-radius: 50%;
+    transform: rotate(180deg);
+  }
+  75% { 
+    border-radius: 20%;
+    transform: rotate(270deg);
+  }
+}
+
+/* Flicker animation */
+.aurion-flicker {
+  animation: aurion-flicker 3s ease-in-out infinite;
+}
+
+@keyframes aurion-flicker {
+  0%, 100% { 
+    opacity: 1;
+  }
+  50% { 
+    opacity: 0.3;
+  }
+  51% { 
+    opacity: 1;
+  }
+  52% { 
+    opacity: 0.3;
+  }
+  53% { 
+    opacity: 1;
+  }
+}
+
+/* heartbeat animation */
+.aurion-heartbeat {
+  animation: aurion-heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-heartbeat {
+  0%, 100% { 
+    transform: scale(1);
+  }
+  10% { 
+    transform: scale(1.1);
+  }
+  20% { 
+    transform: scale(1);
+  }
+  30% { 
+    transform: scale(1.1);
+  }
+  40% { 
+    transform: scale(1);
+  }
+}
+
+/* Typing animation */
+.aurion-typing {
+  animation: aurion-typing 2s steps(4) infinite;
+}
+
+@keyframes aurion-typing {
+  0% { 
+    opacity: 0.3;
+  }
+  50% { 
+    opacity: 1;
+  }
+  100% { 
+    opacity: 0.3;
+  }
+}
+
+/* Loading dots animation */
+.aurion-loading-dots {
+  animation: aurion-loading-dots 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-loading-dots {
+  0%, 80%, 100% { 
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  40% { 
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+/* Signal strength animation */
+.aurion-signal {
+  animation: aurion-signal 2s ease-in-out infinite;
+}
+
+@keyframes aurion-signal {
+  0%, 100% { 
+    transform: scaleY(1);
+  }
+  50% { 
+    transform: scaleY(0.3);
+  }
+}
+
+/* Progress ring animation */
+.aurion-progress-ring {
+  animation: aurion-progress-ring 2s ease-out forwards;
+}
+
+@keyframes aurion-progress-ring {
+  from { 
+    stroke-dashoffset: 1000;
+  }
+  to { 
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Icon rotation with bounce */
+.aurion-rotate-bounce {
+  animation: aurion-rotate-bounce 2s ease-in-out infinite;
+}
+
+@keyframes aurion-rotate-bounce {
+  0% { 
+    transform: rotate(0deg) scale(1);
+  }
+  25% { 
+    transform: rotate(90deg) scale(1.1);
+  }
+  50% { 
+    transform: rotate(180deg) scale(1);
+  }
+  75% { 
+    transform: rotate(270deg) scale(1.1);
+  }
+  100% { 
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* Icon shake with glow */
+.aurion-shake-glow {
+  animation: aurion-shake-glow 0.5s ease-in-out;
+}
+
+@keyframes aurion-shake-glow {
+  0%, 100% { 
+    transform: translateX(0);
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+  10%, 30%, 50%, 70%, 90% { 
+    transform: translateX(-2px);
+    filter: drop-shadow(0 0 10px currentColor);
+  }
+  20%, 40%, 60%, 80% { 
+    transform: translateX(2px);
+    filter: drop-shadow(0 0 15px currentColor);
+  }
+}
+
+/* Icon pulse with scale */
+.aurion-pulse-scale {
+  animation: aurion-pulse-scale 2s ease-in-out infinite;
+}
+
+@keyframes aurion-pulse-scale {
+  0%, 100% { 
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% { 
+    transform: scale(1.2);
+    filter: brightness(1.3);
+  }
+}
+
+/* Icon slide with fade */
+.aurion-slide-fade {
+  animation: aurion-slide-fade 3s ease-in-out infinite;
+}
+
+@keyframes aurion-slide-fade {
+  0%, 100% { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+  25% { 
+    transform: translateX(10px);
+    opacity: 0.7;
+  }
+  75% { 
+    transform: translateX(-10px);
+    opacity: 0.7;
+  }
+}
+
+/* Icon rotate with color change */
+.aurion-rotate-color {
+  animation: aurion-rotate-color 4s linear infinite;
+}
+
+@keyframes aurion-rotate-color {
+  0% { 
+    transform: rotate(0deg);
+    filter: hue-rotate(0deg);
+  }
+  100% { 
+    transform: rotate(360deg);
+    filter: hue-rotate(360deg);
+  }
+}
+
+/* ===== SKELETON LOADING STATES ===== */
+.aurion-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--aurion-bg-surface-low) 25%,
+    var(--aurion-bg-surface-high) 50%,
+    var(--aurion-bg-surface-low) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--aurion-radius-sm);
+  display: inline-block;
+  line-height: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.aurion-skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 251, 251, 0.1),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+
+/* Skeleton Variants */
+.aurion-skeleton-text {
+  height: 1em;
+  border-radius: 0.25em;
+  margin: 0.25em 0;
+}
+
+.aurion-skeleton-circular {
+  border-radius: 50%;
+}
+
+.aurion-skeleton-rectangular {
+  border-radius: var(--aurion-radius-sm);
+}
+
+.aurion-skeleton-rounded {
+  border-radius: var(--aurion-radius-md);
+}
+
+/* Skeleton Animations */
+.aurion-skeleton-pulse {
+  animation: aurion-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-skeleton-pulse {
+  0%, 100% { 
+    opacity: 1;
+  }
+  50% { 
+    opacity: 0.6;
+  }
+}
+
+.aurion-skeleton-shimmer {
+  animation: aurion-skeleton-shimmer 2s infinite;
+}
+
+@keyframes aurion-skeleton-shimmer {
+  0% { 
+    background-position: -200% 0;
+  }
+  100% { 
+    background-position: 200% 0;
+  }
+}
+
+.aurion-skeleton-shimmer::after {
+  animation: aurion-skeleton-shimmer-after 2s infinite;
+}
+
+@keyframes aurion-skeleton-shimmer-after {
+  0% { 
+    transform: translateX(-100%);
+  }
+  100% { 
+    transform: translateX(100%);
+  }
+}
+
+.aurion-skeleton-wave {
+  animation: aurion-skeleton-wave 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-skeleton-wave {
+  0%, 100% { 
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scaleY(0.8);
+    opacity: 0.7;
+  }
+}
+
+/* Skeleton Loader Container */
+.aurion-skeleton-loader {
+  min-height: 200px;
+  position: relative;
+}
+
+.aurion-skeleton-loader::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--aurion-bg-primary);
+  z-index: 1;
+}
+
+.aurion-skeleton-loader > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Pulse Skeleton Overlay */
+.aurion-pulse-skeleton {
+  position: relative;
+}
+
+.aurion-pulse-skeleton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  animation: aurion-pulse-skeleton-overlay 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-pulse-skeleton-overlay {
+  0%, 100% { 
+    opacity: 0.8;
+  }
+  50% { 
+    opacity: 0.95;
+  }
+}
+
+.aurion-skeleton-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 251, 251, 0.1) 50%,
+    transparent 100%
+  );
+  animation: aurion-skeleton-overlay-shimmer 2s infinite;
+  z-index: 5;
+}
+
+@keyframes aurion-skeleton-overlay-shimmer {
+  0% { 
+    transform: translateX(-100%);
+  }
+  100% { 
+    transform: translateX(100%);
+  }
+}
+
+/* Card Reverse for Own Messages */
+.aurion-card-reverse {
+  background: linear-gradient(135deg, var(--aurion-cyan)/10, var(--aurion-purple)/10);
+  border: 1px solid var(--aurion-cyan)/30;
+}
+
+/* Enhanced Skeleton States */
+.aurion-skeleton-loading {
+  pointer-events: none;
+  user-select: none;
+}
+
+.aurion-skeleton-loading * {
+  animation-play-state: paused !important;
+}
+
+/* Skeleton for different themes */
+.aurion-theme-light .aurion-skeleton {
+  background: linear-gradient(
+    90deg,
+    #e9ecef 25%,
+    #dee2e6 50%,
+    #e9ecef 75%
+  );
+}
+
+.aurion-theme-light .aurion-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 184, 184, 0.1),
+    transparent
+  );
+}
+
+/* Skeleton with gradient overlay */
+.aurion-skeleton-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--aurion-bg-surface-low) 0%,
+    var(--aurion-bg-surface-high) 50%,
+    var(--aurion-bg-surface-low) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.aurion-skeleton-gradient::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--aurion-cyan) 90deg,
+    transparent 180deg,
+    var(--aurion-purple) 270deg,
+    transparent 360deg
+  );
+  animation: aurion-skeleton-gradient-rotate 3s linear infinite;
+}
+
+@keyframes aurion-skeleton-gradient-rotate {
+  0% { 
+    transform: rotate(0deg);
+  }
+  100% { 
+    transform: rotate(360deg);
+  }
+}
+
+/* Skeleton with dots pattern */
+.aurion-skeleton-dots {
+  background-image: radial-gradient(
+    circle,
+    var(--aurion-text-dim) 1px,
+    transparent 1px
+  );
+  background-size: 10px 10px;
+  background-position: 0 0, 5px 5px;
+  animation: aurion-skeleton-dots-move 2s linear infinite;
+}
+
+@keyframes aurion-skeleton-dots-move {
+  0% { 
+    background-position: 0 0, 5px 5px;
+  }
+  100% { 
+    background-position: 10px 10px, 15px 15px;
+  }
+}
+
+/* Skeleton with stripes */
+.aurion-skeleton-stripes {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--aurion-bg-surface-low),
+    var(--aurion-bg-surface-low) 10px,
+    var(--aurion-bg-surface-high) 10px,
+    var(--aurion-bg-surface-high) 20px
+  );
+  animation: aurion-skeleton-stripes-move 1s linear infinite;
+}
+
+@keyframes aurion-skeleton-stripes-move {
+  0% { 
+    background-position: 0 0;
+  }
+  100% { 
+    background-position: 28px 28px;
+  }
+}
+
+/* Skeleton fade in/out */
+.aurion-skeleton-fade {
+  animation: aurion-skeleton-fade 0.3s ease-in-out;
+}
+
+@keyframes aurion-skeleton-fade {
+  0% { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aurion-skeleton-fade-out {
+  animation: aurion-skeleton-fade-out 0.3s ease-in-out forwards;
+}
+
+@keyframes aurion-skeleton-fade-out {
+  0% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% { 
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive Skeleton */
+@media (max-width: 768px) {
+  .aurion-skeleton {
+    animation-duration: 1s;
+  }
+  
+  .aurion-skeleton-shimmer {
+    animation-duration: 1.5s;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .aurion-skeleton,
+  .aurion-skeleton-pulse,
+  .aurion-skeleton-shimmer,
+  .aurion-skeleton-wave,
+  .aurion-skeleton-gradient::before,
+  .aurion-skeleton-dots,
+  .aurion-skeleton-stripes {
+    animation: none !important;
+  }
+  
+  .aurion-skeleton::after {
+    animation: none !important;
+  }
+}
+.aurion-bounce-shadow {
+  animation: aurion-bounce-shadow 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-bounce-shadow {
+  0%, 20%, 53%, 80%, 100% { 
+    transform: translateY(0);
+    box-shadow: 0 0 0 0 rgba(0, 251, 251, 0.4);
+  }
+  40%, 43% { 
+    transform: translateY(-8px);
+    box-shadow: 0 8px 20px 0 rgba(0, 251, 251, 0.2);
+  }
+  70% { 
+    transform: translateY(-4px);
+    box-shadow: 0 4px 10px 0 rgba(0, 251, 251, 0.3);
+  }
+  90% { 
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px 0 rgba(0, 251, 251, 0.35);
+  }
+}
+
+/* ===== TYPING EFFECTS ===== */
+.aurion-typing-default {
+  font-family: var(--aurion-font-mono);
+  color: var(--aurion-text-secondary);
+}
+
+.aurion-typing-glow {
+  font-family: var(--aurion-font-mono);
+  color: var(--aurion-cyan);
+  text-shadow: 0 0 10px rgba(0, 251, 251, 0.5);
+}
+
+.aurion-typing-neon {
+  font-family: var(--aurion-font-mono);
+  color: var(--aurion-cyan);
+  text-shadow: 
+    0 0 10px rgba(0, 251, 251, 0.8),
+    0 0 20px rgba(0, 251, 251, 0.6),
+    0 0 30px rgba(0, 251, 251, 0.4);
+  animation: aurion-neon-flicker 3s infinite;
+}
+
+@keyframes aurion-neon-flicker {
+  0%, 100% { 
+    opacity: 1;
+    text-shadow: 
+      0 0 10px rgba(0, 251, 251, 0.8),
+      0 0 20px rgba(0, 251, 251, 0.6),
+      0 0 30px rgba(0, 251, 251, 0.4);
+  }
+  50% { 
+    opacity: 0.95;
+    text-shadow: 
+      0 0 5px rgba(0, 251, 251, 0.9),
+      0 0 15px rgba(0, 251, 251, 0.7),
+      0 0 25px rgba(0, 251, 251, 0.5);
+  }
+}
+
+.aurion-typing-matrix {
+  font-family: var(--aurion-font-mono);
+  color: var(--aurion-green-dim);
+  text-shadow: 0 0 5px rgba(78, 222, 163, 0.5);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(78, 222, 163, 0.05) 50%,
+    transparent 100%
+  );
+  animation: aurion-matrix-scan 2s linear infinite;
+}
+
+@keyframes aurion-matrix-scan {
+  0% { 
+    background-position: 0 0;
+  }
+  100% { 
+    background-position: 0 100px;
+  }
+}
+
+.aurion-typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background: currentColor;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: aurion-cursor-blink 1s infinite;
+}
+
+@keyframes aurion-cursor-blink {
+  0%, 50% { 
+    opacity: 1;
+  }
+  51%, 100% { 
+    opacity: 0;
+  }
+}
+
+/* Enhanced cursor styles */
+.aurion-typing-cursor-neon {
+  background: var(--aurion-cyan);
+  box-shadow: 
+    0 0 10px var(--aurion-cyan),
+    0 0 20px var(--aurion-cyan);
+  animation: aurion-cursor-neon-pulse 1s infinite;
+}
+
+@keyframes aurion-cursor-neon-pulse {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 
+      0 0 10px var(--aurion-cyan),
+      0 0 20px var(--aurion-cyan);
+  }
+  50% { 
+    opacity: 0.7;
+    box-shadow: 
+      0 0 5px var(--aurion-cyan),
+      0 0 15px var(--aurion-cyan);
+  }
+}
+
+.aurion-typing-cursor-matrix {
+  background: var(--aurion-green-dim);
+  box-shadow: 0 0 5px var(--aurion-green-dim);
+  animation: aurion-cursor-matrix-flicker 0.5s infinite;
+}
+
+@keyframes aurion-cursor-matrix-flicker {
+  0%, 100% { 
+    opacity: 1;
+  }
+  50% { 
+    opacity: 0.3;
+  }
+}
+
+/* Typing indicator styles */
+.aurion-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--aurion-bg-surface);
+  border-radius: var(--aurion-radius-md);
+  border: 1px solid var(--aurion-text-dim)/20;
+}
+
+.aurion-typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aurion-cyan);
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.aurion-typing-dot.active {
+  opacity: 1;
+  transform: scale(1.2);
+  box-shadow: 0 0 10px var(--aurion-cyan);
+}
+
+/* Typing wave animation */
+.aurion-typing-wave {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  height: 20px;
+}
+
+.aurion-typing-wave-dot {
+  width: 4px;
+  background: var(--aurion-cyan);
+  border-radius: 2px;
+  transition: height 0.2s ease;
+}
+
+/* Typing bounce animation */
+.aurion-typing-bounce {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aurion-typing-bounce-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--aurion-cyan);
+  animation: aurion-typing-bounce-dot 1.4s infinite ease-in-out;
+}
+
+.aurion-typing-bounce-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.aurion-typing-bounce-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes aurion-typing-bounce-dot {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Typing pulse animation */
+.aurion-typing-pulse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aurion-typing-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aurion-cyan);
+  animation: aurion-typing-pulse-dot 1.5s infinite ease-in-out;
+}
+
+.aurion-typing-pulse-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.aurion-typing-pulse-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes aurion-typing-pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(0, 251, 251, 0.7);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+    box-shadow: 0 0 0 10px rgba(0, 251, 251, 0);
+  }
+}
+
+/* Typing gradient effect */
+.aurion-typing-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--aurion-cyan) 0%,
+    var(--aurion-purple) 50%,
+    var(--aurion-cyan) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: aurion-typing-gradient 3s linear infinite;
+}
+
+@keyframes aurion-typing-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Typing glitch effect */
+.aurion-typing-glitch {
+  position: relative;
+  color: var(--aurion-cyan);
+  font-family: var(--aurion-font-mono);
+}
+
+.aurion-typing-glitch::before,
+.aurion-typing-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.aurion-typing-glitch::before {
+  animation: aurion-typing-glitch-1 0.5s infinite;
+  color: var(--aurion-purple);
+  z-index: -1;
+}
+
+.aurion-typing-glitch::after {
+  animation: aurion-typing-glitch-2 0.5s infinite;
+  color: var(--aurion-green-dim);
+  z-index: -2;
+}
+
+@keyframes aurion-typing-glitch-1 {
+  0%, 100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0);
+  }
+  20% {
+    clip-path: inset(20% 0 30% 0);
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    clip-path: inset(50% 0 20% 0);
+    transform: translate(2px, -2px);
+  }
+  60% {
+    clip-path: inset(10% 0 60% 0);
+    transform: translate(-2px, 1px);
+  }
+  80% {
+    clip-path: inset(80% 0 5% 0);
+    transform: translate(1px, -1px);
+  }
+}
+
+@keyframes aurion-typing-glitch-2 {
+  0%, 100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0);
+  }
+  20% {
+    clip-path: inset(60% 0 10% 0);
+    transform: translate(2px, -1px);
+  }
+  40% {
+    clip-path: inset(20% 0 50% 0);
+    transform: translate(-2px, 2px);
+  }
+  60% {
+    clip-path: inset(30% 0 40% 0);
+    transform: translate(1px, -2px);
+  }
+  80% {
+    clip-path: inset(5% 0 80% 0);
+    transform: translate(-1px, 1px);
+  }
+}
+
+/* Typing rainbow effect */
+.aurion-typing-rainbow {
+  background: linear-gradient(
+    90deg,
+    #ff0000 0%,
+    #ff7f00 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0000ff 56%,
+    #4b0082 70%,
+    #9400d3 84%,
+    #ff0000 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: aurion-typing-rainbow 3s linear infinite;
+}
+
+@keyframes aurion-typing-rainbow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Typing retro effect */
+.aurion-typing-retro {
+  font-family: 'Courier New', monospace;
+  color: var(--aurion-green-dim);
+  text-shadow: 0 0 5px var(--aurion-green-dim);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(78, 222, 163, 0.1) 0%,
+    transparent 70%
+  );
+  animation: aurion-typing-retro-scan 2s linear infinite;
+}
+
+@keyframes aurion-typing-retro-scan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100px;
+  }
+}
+
+/* Typing typewriter effect */
+.aurion-typing-typewriter {
+  font-family: 'Courier New', monospace;
+  color: var(--aurion-text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid var(--aurion-cyan);
+  animation: aurion-typing-typewriter 3s steps(40, end),
+             aurion-cursor-blink 1s infinite;
+}
+
+@keyframes aurion-typing-typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Responsive typing effects */
+@media (max-width: 768px) {
+  .aurion-typing-cursor {
+    width: 1.5px;
+    height: 1em;
+  }
+  
+  .aurion-typing-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .aurion-typing-wave-dot {
+    width: 3px;
+  }
+  
+  .aurion-typing-bounce-dot {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .aurion-typing-neon,
+  .aurion-typing-matrix,
+  .aurion-typing-gradient,
+  .aurion-typing-rainbow,
+  .aurion-typing-retro,
+  .aurion-typing-typewriter {
+    animation: none !important;
+  }
+  
+  .aurion-typing-cursor,
+  .aurion-typing-cursor-neon,
+  .aurion-typing-cursor-matrix {
+    animation: none !important;
+  }
+  
+  .aurion-typing-bounce-dot,
+  .aurion-typing-pulse-dot {
+    animation: none !important;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  .aurion-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .aurion-card {
+    min-height: 44px;
+  }
+  
+  .aurion-interactive {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+.aurion-btn {
+  padding: var(--aurion-space-sm) var(--aurion-space-md);
+  border: none;
+  border-radius: var(--aurion-radius-md);
+  font-family: var(--aurion-font-headline);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--aurion-transition-normal);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aurion-space-sm);
+}
+
+.aurion-btn-primary {
+  background: linear-gradient(135deg, var(--aurion-cyan-fixed) 0%, var(--aurion-cyan-dim) 100%);
+  color: var(--aurion-bg-primary);
+  box-shadow: var(--aurion-shadow-neon-cyan);
+}
+
+.aurion-btn-primary:hover {
+  box-shadow: 0 0 20px rgba(0, 251, 251, 0.3);
+  transform: translateY(-1px);
+}
+
+.aurion-btn-secondary {
+  background: var(--aurion-bg-surface-high);
+  color: var(--aurion-text-secondary);
+  border: 1px solid var(--aurion-text-dim);
+}
+
+.aurion-btn-secondary:hover {
+  background: var(--aurion-bg-surface);
+  border-color: var(--aurion-cyan);
+  color: var(--aurion-cyan);
+}
+
+/* ===== INPUTS ===== */
+.aurion-input {
+  width: 100%;
+  padding: var(--aurion-space-md);
+  background: var(--aurion-bg-surface-high);
+  border: 1px solid var(--aurion-text-dim);
+  border-radius: var(--aurion-radius-md);
+  color: var(--aurion-text-secondary);
+  font-family: var(--aurion-font-mono);
+  font-size: 0.875rem;
+  transition: var(--aurion-transition-normal);
+}
+
+.aurion-input:focus {
+  outline: none;
+  border-color: var(--aurion-cyan);
+  box-shadow: 0 0 20px rgba(0, 251, 251, 0.1);
+}
+
+.aurion-input::placeholder {
+  color: var(--aurion-text-dim);
+  opacity: 0.5;
+}
+
+/* ===== STATUS INDICATORS ===== */
+.aurion-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aurion-space-xs);
+  padding: var(--aurion-space-xs) var(--aurion-space-sm);
+  border-radius: var(--aurion-radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.aurion-status-online {
+  background: rgba(78, 222, 163, 0.1);
+  color: var(--aurion-green);
+  border: 1px solid rgba(78, 222, 163, 0.2);
+}
+
+.aurion-status-offline {
+  background: rgba(255, 113, 108, 0.1);
+  color: var(--aurion-error);
+  border: 1px solid rgba(255, 113, 108, 0.2);
+}
+
+.aurion-status-warning {
+  background: rgba(255, 180, 171, 0.1);
+  color: var(--aurion-warning);
+  border: 1px solid rgba(255, 180, 171, 0.2);
+}
+
+/* ===== PROGRESS BARS ===== */
+.aurion-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--aurion-bg-surface-high);
+  border-radius: var(--aurion-radius-full);
+  overflow: hidden;
+}
+
+.aurion-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--aurion-cyan), var(--aurion-purple));
+  border-radius: var(--aurion-radius-full);
+  transition: width 1s ease;
+}
+
+/* ===== CARDS ===== */
+.aurion-card {
+  background: var(--aurion-bg-surface);
+  border: 1px solid rgba(58, 74, 73, 0.15);
+  border-radius: var(--aurion-radius-lg);
+  padding: var(--aurion-space-lg);
+  transition: var(--aurion-transition-normal);
+}
+
+.aurion-card:hover {
+  border-color: var(--aurion-cyan);
+  box-shadow: var(--aurion-shadow-neon-cyan);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes aurion-pulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.5; 
+    transform: scale(1.05);
+  }
+}
+
+@keyframes aurion-glow {
+  0%, 100% { 
+    box-shadow: var(--aurion-shadow-neon-cyan); 
+    filter: brightness(1);
+  }
+  50% { 
+    box-shadow: 0 0 60px rgba(0, 251, 251, 0.15); 
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes aurion-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+@keyframes aurion-slide-in {
+  from { 
+    opacity: 0; 
+    transform: translateX(-20px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0);
+  }
+}
+
+@keyframes aurion-orb-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Performance-optimized animation classes */
+.aurion-pulse {
+  animation: aurion-pulse 2s ease-in-out infinite;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.aurion-glow {
+  animation: aurion-glow 3s ease-in-out infinite;
+  will-change: box-shadow, filter;
+  backface-visibility: hidden;
+}
+
+.aurion-fade-in {
+  animation: aurion-fade-in 0.3s ease-out forwards;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.aurion-slide-in {
+  animation: aurion-slide-in 0.3s ease-out forwards;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.aurion-orb-rotate {
+  animation: aurion-orb-rotate 20s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .aurion-pulse,
+  .aurion-glow,
+  .aurion-fade-in,
+  .aurion-slide-in,
+  .aurion-orb-rotate {
+    animation: none !important;
+  }
+}
+
+/* GPU-accelerated hover states */
+.aurion-card,
+.aurion-btn,
+.aurion-glass {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.aurion-card:hover {
+  transform: translateZ(0) translateY(-2px);
+}
+
+.aurion-btn:hover {
+  transform: translateZ(0) translateY(-1px);
+}
+
+/* Optimized backdrop filters */
+.aurion-glass,
+.aurion-glass-panel {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  will-change: backdrop-filter;
+  backface-visibility: hidden;
+}
+
+/* Smooth scrolling with performance */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Loading states */
+.aurion-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurion-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 251, 251, 0.1),
+    transparent
+  );
+  animation: aurion-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes aurion-loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  :root {
+    --aurion-space-md: 0.75rem;
+    --aurion-space-lg: 1rem;
+    --aurion-space-xl: 1.5rem;
+  }
+  
+  .aurion-headline {
+    font-size: 1.25rem;
+  }
+  
+  .aurion-mono {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --aurion-space-md: 0.5rem;
+    --aurion-space-lg: 0.75rem;
+    --aurion-space-xl: 1rem;
+  }
+  
+  .aurion-headline {
+    font-size: 1.125rem;
+  }
+  
+  .aurion-mono {
+    font-size: 0.625rem;
+  }
+  
+  .aurion-card {
+    padding: var(--aurion-space-md);
+  }
+  
+  .aurion-btn {
+    padding: var(--aurion-space-sm) var(--aurion-space-md);
+    font-size: 0.75rem;
+  }
+  
+  .aurion-input {
+    padding: var(--aurion-space-sm) var(--aurion-space-md);
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --aurion-space-md: 0.375rem;
+    --aurion-space-lg: 0.5rem;
+    --aurion-space-xl: 0.75rem;
+  }
+  
+  .aurion-headline {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  
+  .aurion-mono {
+    font-size: 0.5rem;
+  }
+  
+  .aurion-card {
+    padding: var(--aurion-space-sm);
+  }
+  
+  .aurion-btn {
+    padding: var(--aurion-space-xs) var(--aurion-space-sm);
+    font-size: 0.625rem;
+  }
+  
+  .aurion-input {
+    padding: var(--aurion-space-sm);
+    font-size: 0.75rem;
+  }
+  
+  .aurion-orb {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+  
+  .aurion-glass-panel {
+    padding: var(--aurion-space-md) !important;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+  
+  /* Show mobile-only elements */
+  .mobile-only {
+    display: block !important;
+  }
+  
+  /* Adjust grid layouts */
+  .grid-cols-12 {
+    grid-template-columns: 1fr !important;
+    gap: var(--aurion-space-md) !important;
+  }
+  
+  .col-span-3,
+  .col-span-6,
+  .col-span-4 {
+    grid-column: span 1 !important;
+  }
+  
+  /* Stack flex layouts */
+  .flex-row {
+    flex-direction: column !important;
+    gap: var(--aurion-space-md) !important;
+  }
+  
+  /* Adjust sidebars */
+  aside {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    border: none !important;
+    padding: var(--aurion-space-md) !important;
+  }
+  
+  /* Adjust main content */
+  main {
+    margin-left: 0 !important;
+    padding: var(--aurion-space-md) !important;
+  }
+  
+  /* Adjust headers */
+  header {
+    padding: var(--aurion-space-md) !important;
+  }
+  
+  header h1,
+  header h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Adjust navigation */
+  nav {
+    flex-direction: column !important;
+    gap: var(--aurion-space-sm) !important;
+  }
+  
+  /* Adjust cards for touch */
+  .aurion-card {
+    min-height: 3rem !important;
+    touch-action: manipulation !important;
+  }
+  
+  /* Adjust buttons for touch */
+  .aurion-btn {
+    min-height: 2.5rem !important;
+    min-width: 2.5rem !important;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .aurion-card:hover {
+    transform: none !important;
+  }
+  
+  .aurion-btn:hover {
+    transform: none !important;
+  }
+  
+  .aurion-glass:hover {
+    transform: none !important;
+  }
+}
+
+/* ===== SCROLLBAR ===== */
+.aurion-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.aurion-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aurion-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--aurion-text-dim);
+  border-radius: var(--aurion-radius-full);
+}
+
+.aurion-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--aurion-cyan);
+}

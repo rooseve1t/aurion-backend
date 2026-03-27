@@ -38,33 +38,38 @@ export interface MemoryEntry {
 export type DeviceType = 'light' | 'switch' | 'thermostat' | 'lock' | 'sensor'
 
 export interface Device {
-  id: number
+  id: string
   name: string
   device_type: DeviceType
   type?: DeviceType
   room: string
   is_online: boolean
+  is_enabled?: boolean
   state: Record<string, unknown>
-  created_at: string
+  capabilities?: string[]
+  created_at?: string
 }
 
 // ── Agents ────────────────────────────────────────────────────────────────────
 export type AgentType = 'financial' | 'smarthome' | 'osint' | 'memory'
 
 export interface Agent {
-  id: number
+  id: string
   name: string
   agent_type: AgentType
   is_active: boolean
   config: Record<string, unknown>
   created_at: string
+  status?: string
+  tasks_completed?: number
+  success_rate?: number
 }
 
 export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export interface AgentTask {
-  id: number
-  agent_id: number
+  id: string
+  agent_id: string
   action: string
   type?: string
   parameters: Record<string, unknown>
@@ -79,31 +84,41 @@ export interface AgentTask {
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 export interface Tariff {
-  id: number
+  id: string
   name: string
-  price: string
+  display_name?: string
+  description?: string
+  price: number
   duration_days: number
   features: Record<string, boolean | number>
   is_active: boolean
+  currency?: string
+  badge?: string | null
 }
 
 export type SubscriptionStatus = 'pending' | 'active' | 'cancelled' | 'expired'
 
 export interface Subscription {
-  id: number
-  tariff_id: number
+  id: string
+  tariff_id: string
   status: SubscriptionStatus
   start_date: string | null
   end_date: string | null
   auto_renew: boolean
   cancelled_at: string | null
   created_at: string
+  current_period_start?: string | null
+  current_period_end?: string | null
+  days_left?: number
+  tariff?: Tariff | null
+  features?: Record<string, boolean | number>
+  next_billing_amount?: number | null
 }
 
 export interface Payment {
-  id: number
-  subscription_id: number
-  amount: string
+  id: string
+  subscription_id: string | null
+  amount: number
   currency: string
   status: 'pending' | 'succeeded' | 'failed' | 'refunded'
   description: string

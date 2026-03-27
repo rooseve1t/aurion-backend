@@ -12,17 +12,43 @@ export function AppLayout() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!accessToken) { navigate('/auth/login'); return }
-    if (!user) fetchMe()
-    fetchStats()
-    const interval = setInterval(fetchStats, 30000)
-    return () => clearInterval(interval)
+    let cancelled = false
+
+    if (!accessToken) {
+      navigate('/auth/login')
+      return
+    }
+
+    const bootstrap = async () => {
+      if (!user) {
+        await fetchMe()
+      }
+
+      if (!cancelled && localStorage.getItem('access_token')) {
+        fetchStats()
+      }
+    }
+
+    void bootstrap()
+
+    const interval = setInterval(() => {
+      if (localStorage.getItem('access_token')) {
+        fetchStats()
+      }
+    }, 30000)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [accessToken, user, fetchMe, fetchStats, navigate])
 
   if (!accessToken) return null
 
   return (
     <div className={styles.layout}>
+      <div className={styles.aurora} />
+      <div className={styles.mesh} />
       <SideNav />
       <main className={styles.main}>
         <Outlet />

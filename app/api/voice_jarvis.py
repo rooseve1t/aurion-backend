@@ -12,12 +12,12 @@ import base64
 import io
 from datetime import datetime, timezone
 
-from ..database import AsyncSessionLocal
+from ..database_final import AsyncSessionLocal
 from ..services.voice_jarvis_service import VoiceJarvisService, get_voice_jarvis_service
 from ..api.auth import get_current_user, get_db_session
 from ..models.user import User
 
-router = APIRouter(prefix="/api/v1/voice/jarvis", tags=["jarvis"])
+router = APIRouter(tags=["jarvis"])
 
 # 🏆 ЗОЛОТОЙ СТАНДАРТ: Pydantic модели с валидацией
 class VoiceRequest(BaseModel):

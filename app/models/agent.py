@@ -2,19 +2,18 @@
 Модели агентов и роевого интеллекта
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Boolean, Float, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class Agent(Base):
     __tablename__ = "agents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Основная информация
     name = Column(String(200), nullable=False)
@@ -22,8 +21,8 @@ class Agent(Base):
     description = Column(Text, nullable=True)
     
     # Конфигурация
-    config = Column(JSONB, default=dict, nullable=True)
-    capabilities = Column(JSONB, default=list, nullable=True)
+    config = Column(JSONType, default=dict, nullable=True)
+    capabilities = Column(JSONType, default=list, nullable=True)
     model = Column(String(100), nullable=True)  # Используемая AI модель
     
     # Статус
@@ -58,26 +57,26 @@ class Agent(Base):
 class AgentTask(Base):
     __tablename__ = "agent_tasks"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    agent_id = Column(UUIDType, ForeignKey("agents.id"), nullable=False, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Задача
     task_type = Column(String(50), nullable=False)
-    input_data = Column(JSONB, nullable=False)
-    output_data = Column(JSONB, nullable=True)
+    input_data = Column(JSONType, nullable=False)
+    output_data = Column(JSONType, nullable=True)
     
     # Статус
     status = Column(String(20), default="pending", nullable=False)  # pending, running, completed, failed, cancelled
     progress = Column(Integer, default=0, nullable=False)  # 0-100
     
     # Результаты
-    result = Column(JSONB, nullable=True)
+    result = Column(JSONType, nullable=True)
     error_message = Column(Text, nullable=True)
     confidence_score = Column(Float, nullable=True)
     
     # Оркестрация
-    parent_task_id = Column(UUID(as_uuid=True), ForeignKey("agent_tasks.id"), nullable=True)
+    parent_task_id = Column(UUIDType, ForeignKey("agent_tasks.id"), nullable=True)
     swarm_task_id = Column(String(100), nullable=True)  # ID роевой задачи
     priority = Column(Integer, default=5, nullable=False)
     
@@ -103,18 +102,18 @@ class AgentTask(Base):
 class AgentLog(Base):
     __tablename__ = "agent_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id"), nullable=False, index=True)
-    task_id = Column(UUID(as_uuid=True), ForeignKey("agent_tasks.id"), nullable=True, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    agent_id = Column(UUIDType, ForeignKey("agents.id"), nullable=False, index=True)
+    task_id = Column(UUIDType, ForeignKey("agent_tasks.id"), nullable=True, index=True)
     
     # Лог
     level = Column(String(10), default="info", nullable=False)  # debug, info, warning, error
     message = Column(Text, nullable=False)
-    details = Column(JSONB, nullable=True)
+    details = Column(JSONType, nullable=True)
     
     # Метаданные
     event_type = Column(String(50), nullable=True)  # task_start, task_complete, error, etc.
-    context = Column(JSONB, nullable=True)
+    context = Column(JSONType, nullable=True)
     
     # Время
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)

@@ -65,12 +65,16 @@ export function MemoryPage() {
           <span className={styles.title}>ВЕКТОРНАЯ ПАМЯТЬ</span>
           <span className={styles.count}>{count} записей</span>
         </div>
+        <div className={styles.statsStrip}>
+          <div className={styles.statChip}><span>Всего</span><strong>{count}</strong></div>
+          <div className={styles.statChip}><span>Важных</span><strong>{entries.filter((entry) => entry.importance >= 8).length}</strong></div>
+          <div className={styles.statChip}><span>Последний доступ</span><strong>{entries[0] ? formatDate(entries[0].created_at) : '—'}</strong></div>
+        </div>
         <div className={styles.actions}>
           <div className={styles.searchWrap}>
             <Search size={14} className={styles.searchIcon} />
             <input
-              className="input"
-              style={{ paddingLeft: 32 }}
+              className={`input ${styles.searchInput}`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Семантический поиск..."
@@ -135,12 +139,12 @@ function MemoryCard({ entry, onDelete }: { entry: MemoryEntry; onDelete: (id: nu
             <span key={t} className={styles.tag}>{t}</span>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: '11px', color: impColor }}>
+        <div className={styles.cardMeta}>
+          <span className={styles.importance} style={{ color: impColor }}>
             ★ {entry.importance}/10
           </span>
           {entry.similarity !== undefined && (
-            <span style={{ fontSize: '10px', color: 'var(--green)' }}>
+            <span className={styles.similarity}>
               {Math.round(entry.similarity * 100)}%
             </span>
           )}

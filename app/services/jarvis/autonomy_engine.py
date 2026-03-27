@@ -1,0 +1,344 @@
+"""
+🧠 Автономная система JARVIS
+Принятие решений без прямых команд пользователя
+"""
+import logging
+import asyncio
+from typing import Dict, Any, List, Optional, Callable, Awaitable
+from datetime import datetime
+from enum import Enum
+from dataclasses import dataclass
+from sqlalchemy import text
+
+# Импорты для работы с БД (нужно быть аккуратным с циклическими импортами)
+from ...database_final import AsyncSessionLocal
+from .evolution_engine import EvolutionEngine
+
+logger = logging.getLogger("jarvis-autonomy")
+
+class AutonomyLevel(Enum):
+    """Уровни автономности"""
+    MANUAL = 0          # Только по команде
+    ASSISTIVE = 1       # Подсказки и предложения
+    SEMI_AUTO = 2       # Автоматические действия с подтверждением
+    FULL_AUTO = 3       # Полная автономность
+
+class ActionType(Enum):
+    """Типы автономных действий"""
+    SYSTEM_OPTIMIZATION = "system_optimization"
+    SECURITY_SCAN = "security_scan"
+    DATA_BACKUP = "data_backup"
+    PERFORMANCE_TUNING = "performance_tuning"
+    USER_ASSISTANCE = "user_assistance"
+    PREDICTIVE_MAINTENANCE = "predictive_maintenance"
+    RESOURCE_MANAGEMENT = "resource_management"
+    ERROR_PREVENTION = "error_prevention"
+
+@dataclass
+class AutonomousAction:
+    """Описание автономного действия"""
+    id: str
+    action_type: ActionType
+    description: str
+    priority: int  # 1-10
+    autonomy_required: AutonomyLevel
+    conditions: List[str]
+    execution_func: Callable[..., Awaitable[Any]]
+    rollback_func: Optional[Callable[..., Awaitable[Any]]] = None
+    estimated_time: int = 0  # секунды
+    risk_level: int = 1  # 1-10
+    user_notification: bool = True
+    auto_confirm_threshold: int = 8  # приоритет выше этого - без подтверждения
+
+class AutonomyEngine:
+    """Движок автономности JARVIS"""
+    
+    def __init__(self, evolution_engine: Optional[EvolutionEngine] = None) -> None:
+        self.current_level: AutonomyLevel = AutonomyLevel.ASSISTIVE
+        self.active_actions: Dict[str, Any] = {}
+        self.action_history: List[Any] = []
+        self.scheduled_actions: List[Any] = []
+        self.system_metrics: Dict[str, Any] = {}
+        self.user_patterns: Dict[str, Any] = {}
+        self.learning_enabled: bool = True
+        self.evolution_engine = evolution_engine
+        
+        # Пороги для автоматических действий
+        self.thresholds: Dict[str, float] = {
+            "cpu_usage": 80.0,
+            "memory_usage": 85.0,
+            "disk_usage": 90.0,
+            "error_rate": 5.0,
+            "response_time": 2000.0,  # ms
+            "security_threats": 1.0
+        }
+        
+        # Регистрация автономных действий
+        self.registered_actions: Dict[str, AutonomousAction] = {}
+        self._register_core_actions()
+        
+    def _register_core_actions(self) -> None:
+        """Зарегистрировать базовые автономные действия"""
+        self.register_action(AutonomousAction(
+            id="auto_cleanup_temp",
+            action_type=ActionType.SYSTEM_OPTIMIZATION,
+            description="Очистка временных файлов",
+            priority=3,
+            autonomy_required=AutonomyLevel.SEMI_AUTO,
+            conditions=["disk_usage > 85"],
+            execution_func=self._cleanup_temp_files,
+            estimated_time=30,
+            risk_level=1
+        ))
+        self.register_action(AutonomousAction(
+            id="security_scan",
+            action_type=ActionType.SECURITY_SCAN,
+            description="Сканирование безопасности",
+            priority=8,
+            autonomy_required=AutonomyLevel.ASSISTIVE,
+            conditions=["error_rate > 5"],
+            execution_func=self._run_security_scan,
+            estimated_time=45,
+            risk_level=2
+        ))
+        self.register_action(AutonomousAction(
+            id="data_backup",
+            action_type=ActionType.DATA_BACKUP,
+            description="Резервное копирование",
+            priority=5,
+            autonomy_required=AutonomyLevel.SEMI_AUTO,
+            conditions=["system_stable"],
+            execution_func=self._run_backup,
+            estimated_time=90,
+            risk_level=2
+        ))
+        self.register_action(AutonomousAction(
+            id="performance_tune",
+            action_type=ActionType.PERFORMANCE_TUNING,
+            description="Оптимизация производительности",
+            priority=6,
+            autonomy_required=AutonomyLevel.SEMI_AUTO,
+            conditions=["cpu_usage > 80"],
+            execution_func=self._tune_performance,
+            estimated_time=60,
+            risk_level=3
+        ))
+        self.register_action(AutonomousAction(
+            id="user_assistance",
+            action_type=ActionType.USER_ASSISTANCE,
+            description="Проактивная помощь пользователю",
+            priority=4,
+            autonomy_required=AutonomyLevel.ASSISTIVE,
+            conditions=["system_stable"],
+            execution_func=self._assist_user,
+            estimated_time=15,
+            risk_level=1
+        ))
+        self.register_action(AutonomousAction(
+            id="predictive_maintenance",
+            action_type=ActionType.PREDICTIVE_MAINTENANCE,
+            description="Превентивная диагностика",
+            priority=5,
+            autonomy_required=AutonomyLevel.SEMI_AUTO,
+            conditions=["disk_usage > 70"],
+            execution_func=self._predictive_maintenance,
+            estimated_time=35,
+            risk_level=2
+        ))
+        self.register_action(AutonomousAction(
+            id="resource_management",
+            action_type=ActionType.RESOURCE_MANAGEMENT,
+            description="Управление ресурсами",
+            priority=5,
+            autonomy_required=AutonomyLevel.ASSISTIVE,
+            conditions=["memory_usage > 85"],
+            execution_func=self._manage_resources,
+            estimated_time=25,
+            risk_level=2
+        ))
+        self.register_action(AutonomousAction(
+            id="error_prevention",
+            action_type=ActionType.ERROR_PREVENTION,
+            description="Профилактика ошибок",
+            priority=7,
+            autonomy_required=AutonomyLevel.SEMI_AUTO,
+            conditions=["error_rate > 3"],
+            execution_func=self._prevent_errors,
+            estimated_time=20,
+            risk_level=2
+        ))
+
+    def register_action(self, action: AutonomousAction) -> None:
+        self.registered_actions[action.id] = action
+
+    def set_autonomy_level(self, level: AutonomyLevel) -> None:
+        """Установить текущий уровень автономности"""
+        self.current_level = level
+        logger.info(f"🤖 Autonomy level set to: {level.name}")
+
+    async def start_monitoring(self) -> None:
+        """Запустить фоновый мониторинг системы"""
+        logger.info("🚀 Starting JARVIS autonomy monitoring...")
+        while True:
+            try:
+                # В реальной системе здесь будет сбор реальных метрик
+                # Сейчас - имитация
+                import random
+                self.system_metrics = {
+                    "cpu_usage": random.uniform(10.0, 90.0),
+                    "memory_usage": random.uniform(20.0, 95.0),
+                    "disk_usage": 45.5,
+                    "error_rate": random.uniform(0.0, 10.0),
+                    "response_time": random.uniform(100.0, 3000.0)
+                }
+                
+                # Проверка порогов и запуск действий
+                await self._check_thresholds()
+                
+                await asyncio.sleep(60)  # Интервал мониторинга
+            except Exception as e:
+                logger.error(f"Error in autonomy monitoring: {e}")
+                await asyncio.sleep(10)
+
+    async def _check_thresholds(self) -> None:
+        """Проверить метрики на превышение порогов"""
+        for metric, threshold in self.thresholds.items():
+            if self.system_metrics.get(metric, 0) > threshold:
+                await self._handle_threshold_breach(metric)
+
+    async def _collect_system_metrics(self) -> None:
+        """Собрать системные метрики через psutil (с fallback)."""
+        try:
+            import psutil  # type: ignore
+
+            self.system_metrics["cpu_usage"] = float(psutil.cpu_percent(interval=0))
+            self.system_metrics["memory_usage"] = float(psutil.virtual_memory().percent)
+            self.system_metrics["disk_usage"] = float(psutil.disk_usage("/").percent)
+        except Exception:
+            # Keep deterministic fallback for tests and minimal environments.
+            self.system_metrics.setdefault("cpu_usage", 50.0)
+            self.system_metrics.setdefault("memory_usage", 50.0)
+            self.system_metrics.setdefault("disk_usage", 50.0)
+
+    async def _evaluate_condition(self, condition: str) -> bool:
+        """Оценить простое условие автономного действия."""
+        condition = condition.strip()
+        if condition == "system_stable":
+            return (
+                float(self.system_metrics.get("cpu_usage", 0)) <= 85
+                and float(self.system_metrics.get("memory_usage", 0)) < 90
+                and float(self.system_metrics.get("error_rate", 0)) < 5
+            )
+
+        for operator in (">=", "<=", ">", "<", "=="):
+            if operator in condition:
+                left, right = [part.strip() for part in condition.split(operator, 1)]
+                left_value = float(self.system_metrics.get(left, 0))
+                right_value = float(right)
+                if operator == ">=":
+                    return left_value >= right_value
+                if operator == "<=":
+                    return left_value <= right_value
+                if operator == ">":
+                    return left_value > right_value
+                if operator == "<":
+                    return left_value < right_value
+                return left_value == right_value
+        return False
+
+    async def _handle_threshold_breach(self, metric: str) -> None:
+        """Обработать превышение порога"""
+        logger.warning(f"⚠️ Threshold breach: {metric} = {self.system_metrics[metric]}")
+        # Здесь будет логика подбора и запуска действий
+        pass
+
+    async def execute_action(self, action: AutonomousAction) -> Any:
+        """Выполнить автономное действие (публичный метод)"""
+        return await self._execute_action(action)
+
+    async def _execute_action(self, action: AutonomousAction) -> Any:
+        """Выполнить автономное действие"""
+        logger.info(f"⚙️ Executing autonomous action: {action.id}")
+        try:
+            result = await action.execution_func()
+            self.action_history.append({
+                "action_id": action.id,
+                "timestamp": datetime.now(),
+                "status": "success",
+                "result": result
+            })
+            if self.evolution_engine:
+                await self.evolution_engine.process_event("successful_action", {"action_id": action.id, "result": result})
+            return result
+        except Exception as e:
+            logger.error(f"Failed to execute action {action.id}: {e}")
+            self.action_history.append({
+                "action_id": action.id,
+                "timestamp": datetime.now(),
+                "status": "failure",
+                "error": str(e)
+            })
+            if self.evolution_engine:
+                await self.evolution_engine.process_event("failed_action", {"action_id": action.id, "error": str(e)})
+            if action.rollback_func:
+                await action.rollback_func()
+            return False
+
+    async def _cleanup_temp_files(self) -> bool:
+        logger.info("🧹 Auto-cleanup initiated...")
+        return True
+
+    async def _run_security_scan(self) -> bool:
+        return True
+
+    async def _run_backup(self) -> bool:
+        return True
+
+    async def _tune_performance(self) -> bool:
+        return True
+
+    async def _assist_user(self) -> bool:
+        return True
+
+    async def _predictive_maintenance(self) -> bool:
+        return True
+
+    async def _manage_resources(self) -> bool:
+        return True
+
+    async def _prevent_errors(self) -> bool:
+        return True
+
+    async def notify_user(self, message: str) -> None:
+        """Уведомить пользователя через БД и логи"""
+        logger.info(f"🎤 JARVIS: {message}")
+        try:
+            async with AsyncSessionLocal() as session:
+                await session.execute(
+                    text("""
+                        INSERT INTO proactive_suggestions (user_id, message, confidence, source, created_at)
+                        VALUES (:uid, :msg, :conf, :src, :ts)
+                    """),
+                    {
+                        "uid": "system", 
+                        "msg": message,
+                        "conf": 1.0,
+                        "src": "jarvis_voice",
+                        "ts": datetime.now().isoformat()
+                    }
+                )
+                await session.commit()
+        except Exception as e:
+            logger.error(f"Failed to save notification: {e}")
+
+async def get_autonomy_engine() -> AutonomyEngine:
+    # This is a temporary solution. In a real application, you would use a proper dependency injection system.
+    from .evolution_engine import EvolutionEngine
+    from .personality_engine import get_personality_engine
+    personality_engine = await get_personality_engine()
+    # Pass None for autonomy_engine for now, it will be set later
+    evolution_engine = EvolutionEngine(personality_engine, None) 
+    autonomy_engine = AutonomyEngine(evolution_engine)
+    # Now set the autonomy_engine in evolution_engine
+    evolution_engine.autonomy = autonomy_engine
+    return autonomy_engine

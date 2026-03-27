@@ -1,0 +1,832 @@
+openapi: 3.0.0
+info:
+  title: Aurion OS API
+  description: |
+    # Aurion OS API Documentation
+    
+    Complete API for the Aurion Operating System including:
+    - 🤖 JARVIS AI Assistant with emotional intelligence and autonomy
+    - 🔐 Authentication and User Management
+    - 🛡️ VPN Services
+    - 💰 Financial Operations
+    - 🧠 Cognitive Engine
+    - 🌐 OSINT Tools
+    
+    ## Base URL
+    Production: `https://api.aurionai.ru/v1`
+    
+    ## Authentication
+    All endpoints require Bearer token authentication:
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+  version: 1.0.0
+  contact:
+    name: Aurion OS Support
+    email: support@aurionai.ru
+    url: https://www.aurionai.ru
+  
+servers:
+  - url: https://api.aurionai.ru/v1
+    description: Production server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ===== AUTHENTICATION =====
+  /auth/register:
+    post:
+      summary: Register new user
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        400:
+          description: Invalid input
+        409:
+          description: User already exists
+
+  /auth/login:
+    post:
+      summary: Login user
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        401:
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        200:
+          description: Token refreshed
+
+  /auth/me:
+    get:
+      summary: Get current user info
+      tags:
+        - Authentication
+      responses:
+        200:
+          description: User info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # ===== JARVIS =====
+  /jarvis/autonomy/status:
+    get:
+      summary: Get JARVIS autonomy status
+      tags:
+        - JARVIS
+      responses:
+        200:
+          description: Autonomy status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JarvisAutonomyStatus'
+
+  /jarvis/autonomy/enable:
+    post:
+      summary: Enable JARVIS autonomy
+      tags:
+        - JARVIS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level:
+                  type: integer
+                  enum: [0, 1, 2, 3]
+                  description: 0=Manual, 1=Assistive, 2=Semi-Auto, 3=Full-Auto
+      responses:
+        200:
+          description: Autonomy enabled
+
+  /jarvis/voice:
+    post:
+      summary: Process voice input
+      tags:
+        - JARVIS
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio file (WAV, MP3)
+                context:
+                  type: object
+                  description: Additional context
+      responses:
+        200:
+          description: Voice processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceResponse'
+
+  /jarvis/neuro:
+    post:
+      summary: Connect neuro interface
+      tags:
+        - JARVIS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_type:
+                  type: string
+                  enum: [simulated, brainflow]
+                  default: simulated
+      responses:
+        200:
+          description: Neuro interface connected
+
+  # ===== VPN =====
+  /vpn/status:
+    get:
+      summary: Get VPN status
+      tags:
+        - VPN
+      responses:
+        200:
+          description: VPN status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VPNStatus'
+
+  /vpn/connect:
+    post:
+      summary: Connect to VPN
+      tags:
+        - VPN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                country:
+                  type: string
+                  description: Target country code (US, UK, DE, etc.)
+                stealth_mode:
+                  type: boolean
+                  default: false
+      responses:
+        200:
+          description: VPN connected
+
+  /vpn/disconnect:
+    post:
+      summary: Disconnect VPN
+      tags:
+        - VPN
+      responses:
+        200:
+          description: VPN disconnected
+
+  /vpn/servers:
+    get:
+      summary: List available VPN servers
+      tags:
+        - VPN
+      responses:
+        200:
+          description: Server list retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VPNServer'
+
+  # ===== FINANCE =====
+  /finance/wallet:
+    get:
+      summary: Get wallet balance
+      tags:
+        - Finance
+      responses:
+        200:
+          description: Wallet info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /finance/transactions:
+    get:
+      summary: Get transaction history
+      tags:
+        - Finance
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        200:
+          description: Transactions retrieved
+
+  /finance/transfer:
+    post:
+      summary: Transfer funds
+      tags:
+        - Finance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        200:
+          description: Transfer completed
+        400:
+          description: Insufficient funds
+
+  # ===== MEMORY =====
+  /memory/store:
+    post:
+      summary: Store memory
+      tags:
+        - Memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemoryStoreRequest'
+      responses:
+        201:
+          description: Memory stored
+
+  /memory/recall:
+    get:
+      summary: Recall memories
+      tags:
+        - Memory
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Memories retrieved
+
+  # ===== OSINT =====
+  /osint/search:
+    post:
+      summary: OSINT search
+      tags:
+        - OSINT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: string
+                  description: Search target (email, username, IP)
+                sources:
+                  type: array
+                  items:
+                    type: string
+                  description: Data sources to search
+      responses:
+        200:
+          description: Search results
+
+  /osint/whois:
+    get:
+      summary: WHOIS lookup
+      tags:
+        - OSINT
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: WHOIS data retrieved
+
+  # ===== AGENTS =====
+  /agents:
+    get:
+      summary: List user agents
+      tags:
+        - Agents
+      responses:
+        200:
+          description: Agents list retrieved
+
+  /agents/create:
+    post:
+      summary: Create new agent
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreateRequest'
+      responses:
+        201:
+          description: Agent created
+
+  # ===== PAYMENTS =====
+  /payments/plans:
+    get:
+      summary: Get subscription plans
+      tags:
+        - Payments
+      security: []
+      responses:
+        200:
+          description: Plans retrieved
+
+  /payments/subscribe:
+    post:
+      summary: Subscribe to plan
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id:
+                  type: string
+                payment_method:
+                  type: string
+      responses:
+        200:
+          description: Subscription created
+
+  /payments/cancel:
+    post:
+      summary: Cancel subscription
+      tags:
+        - Payments
+      responses:
+        200:
+          description: Subscription cancelled
+
+  # ===== SMART HOME =====
+  /smarthome/devices:
+    get:
+      summary: List connected devices
+      tags:
+        - Smart Home
+      responses:
+        200:
+          description: Devices retrieved
+
+  /smarthome/control:
+    post:
+      summary: Control device
+      tags:
+        - Smart Home
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: string
+                action:
+                  type: string
+                  enum: [on, off, toggle, set_value]
+                value:
+                  type: string
+      responses:
+        200:
+          description: Command executed
+
+  # ===== WEBSOCKET =====
+  /ws/jarvis:
+    get:
+      summary: WebSocket for real-time JARVIS
+      tags:
+        - WebSocket
+      description: |
+        WebSocket endpoint for real-time communication with JARVIS.
+        Supports voice streaming, neuro interface data, and live responses.
+        
+        Connection: `wss://api.aurionai.ru/v1/ws/jarvis`
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login
+
+  schemas:
+    # ===== AUTH SCHEMAS =====
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - username
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+        password:
+          type: string
+          minLength: 8
+          format: password
+        invite_code:
+          type: string
+          description: Optional invite code
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        totp_code:
+          type: string
+          description: 2FA code if enabled
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: Bearer
+        expires_in:
+          type: integer
+          description: Seconds until expiration
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [user, creator, admin]
+        subscription:
+          type: string
+          enum: [free, basic, premium, enterprise]
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+
+    # ===== JARVIS SCHEMAS =====
+    JarvisAutonomyStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        level:
+          type: integer
+          enum: [0, 1, 2, 3]
+        active_actions:
+          type: integer
+        available_actions:
+          type: integer
+        system_metrics:
+          type: object
+          properties:
+            cpu_usage:
+              type: number
+            memory_usage:
+              type: number
+            disk_usage:
+              type: number
+            health_score:
+              type: integer
+
+    VoiceResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        emotion:
+          type: string
+        confidence:
+          type: number
+        audio_url:
+          type: string
+          format: uri
+        action_taken:
+          type: string
+
+    # ===== VPN SCHEMAS =====
+    VPNStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        server:
+          type: string
+        country:
+          type: string
+        ip_address:
+          type: string
+        protocol:
+          type: string
+          enum: [wireguard, openvpn, shadowsocks]
+        stealth_mode:
+          type: boolean
+        bandwidth_used:
+          type: object
+          properties:
+            upload:
+              type: integer
+            download:
+              type: integer
+
+    VPNServer:
+      type: object
+      properties:
+        id:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        ip:
+          type: string
+        protocol:
+          type: string
+        latency:
+          type: integer
+          description: Latency in ms
+        load:
+          type: integer
+          description: Server load percentage
+        supports_stealth:
+          type: boolean
+
+    # ===== FINANCE SCHEMAS =====
+    Wallet:
+      type: object
+      properties:
+        user_id:
+          type: string
+        balances:
+          type: object
+          additionalProperties:
+            type: number
+        total_usd:
+          type: number
+        addresses:
+          type: object
+          additionalProperties:
+            type: string
+
+    TransferRequest:
+      type: object
+      required:
+        - to_address
+        - amount
+        - currency
+      properties:
+        to_address:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [BTC, ETH, USDT, USDC, AUR]
+        memo:
+          type: string
+
+    # ===== MEMORY SCHEMAS =====
+    MemoryStoreRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+        type:
+          type: string
+          enum: [text, voice, image, document]
+        tags:
+          type: array
+          items:
+            type: string
+        importance:
+          type: integer
+          minimum: 1
+          maximum: 10
+
+    # ===== AGENT SCHEMAS =====
+    AgentCreateRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [assistant, researcher, analyst, coder, creative]
+        personality:
+          type: object
+          properties:
+            formality:
+              type: integer
+              minimum: 0
+              maximum: 100
+            creativity:
+              type: integer
+              minimum: 0
+              maximum: 100
+        capabilities:
+          type: array
+          items:
+            type: string
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+      description: Page number
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        maximum: 100
+      description: Items per page
+
+tags:
+  - name: Authentication
+    description: User registration, login, and token management
+  - name: JARVIS
+    description: AI assistant with emotional intelligence and autonomy
+  - name: VPN
+    description: Secure VPN services and proxy management
+  - name: Finance
+    description: Cryptocurrency wallets and transactions
+  - name: Memory
+    description: Vector memory storage and semantic search
+  - name: OSINT
+    description: Open source intelligence tools
+  - name: Agents
+    description: AI agents and cognitive engines
+  - name: Payments
+    description: Subscription management and billing
+  - name: Smart Home
+    description: IoT device management
+  - name: WebSocket
+    description: Real-time communication endpoints

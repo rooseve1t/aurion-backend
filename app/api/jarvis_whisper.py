@@ -5,12 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
 
-from ..database import get_db
+from ..database_final import get_db
 from ..services.voice_jarvis_standalone import VoiceJarvisStandalone
 from ..api.auth import get_current_user
 from ..models.user import User
 
-router = APIRouter(prefix="/api/v1/voice/jarvis", tags=["jarvis-whisper"])
+router = APIRouter(tags=["jarvis-whisper"])
 
 # Pydantic модели
 class VoiceModeRequest(BaseModel):

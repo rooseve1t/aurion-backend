@@ -24,6 +24,6 @@ describe('DashboardPage', () => {
   it('показывает поле ввода', async () => {
     const { DashboardPage } = await import('@/pages/Dashboard/DashboardPage')
     render(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(screen.getByPlaceholderText('Введите сообщение...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Введите сообщение или нажмите на микрофон...')).toBeInTheDocument()
   })
 })

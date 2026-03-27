@@ -2,19 +2,18 @@
 Модели эволюционной системы
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Boolean, Float, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class EvolutionExperiment(Base):
     __tablename__ = "evolution_experiments"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Эксперимент
     experiment_type = Column(String(50), nullable=False)  # code_generation, optimization, testing, etc.
@@ -23,8 +22,8 @@ class EvolutionExperiment(Base):
     
     # Цель
     objective = Column(Text, nullable=False)
-    success_criteria = Column(JSONB, nullable=False)
-    baseline_metrics = Column(JSONB, nullable=True)
+    success_criteria = Column(JSONType, nullable=False)
+    baseline_metrics = Column(JSONType, nullable=True)
     
     # Генерация кода
     prompt = Column(Text, nullable=False)
@@ -34,20 +33,20 @@ class EvolutionExperiment(Base):
     
     # Валидация
     validation_status = Column(String(20), default="pending", nullable=False)  # pending, passed, failed
-    validation_errors = Column(JSONB, default=list, nullable=True)
-    security_issues = Column(JSONB, default=list, nullable=True)
+    validation_errors = Column(JSONType, default=list, nullable=True)
+    security_issues = Column(JSONType, default=list, nullable=True)
     
     # Тестирование
     test_status = Column(String(20), default="pending", nullable=False)  # pending, passed, failed, running
-    test_results = Column(JSONB, nullable=True)
+    test_results = Column(JSONType, nullable=True)
     coverage_percent = Column(Float, nullable=True)
-    performance_metrics = Column(JSONB, nullable=True)
+    performance_metrics = Column(JSONType, nullable=True)
     
     # Выполнение
     execution_status = Column(String(20), default="pending", nullable=False)  # pending, running, completed, failed
-    execution_result = Column(JSONB, nullable=True)
+    execution_result = Column(JSONType, nullable=True)
     execution_time_ms = Column(Integer, nullable=True)
-    resource_usage = Column(JSONB, nullable=True)  # cpu, memory, etc.
+    resource_usage = Column(JSONType, nullable=True)  # cpu, memory, etc.
     
     # Git интеграция
     git_branch = Column(String(100), nullable=True)
@@ -74,7 +73,7 @@ class EvolutionExperiment(Base):
     
     # Безопасность
     risk_level = Column(String(20), default="medium", nullable=False)  # low, medium, high, critical
-    blocked_operations = Column(JSONB, default=list, nullable=True)
+    blocked_operations = Column(JSONType, default=list, nullable=True)
     
     # Время
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
@@ -83,8 +82,8 @@ class EvolutionExperiment(Base):
     timeout_at = Column(DateTime(timezone=True), nullable=True)
     
     # Метаданные
-    evolution_metadata = Column(JSONB, nullable=True)
-    tags = Column(JSONB, default=list, nullable=True)
+    evolution_metadata = Column(JSONType, nullable=True)
+    tags = Column(JSONType, default=list, nullable=True)
     
     # Связи
     user = relationship("User", back_populates="evolution_experiments")

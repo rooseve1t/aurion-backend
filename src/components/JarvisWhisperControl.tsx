@@ -1,7 +1,7 @@
-# 🤫 REACT COMPONENT FOR JARVIS WHISPER MODE
+// Jarvis whisper mode controls
 
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, Slider, Switch, Alert, Tooltip } from '@/components/ui';
+import { Card, Button, Badge, Switch, Alert } from '@/components/ui';
 
 interface VoiceStatus {
   current_mode: 'normal' | 'whisper' | 'soft' | 'energetic';

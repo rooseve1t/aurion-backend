@@ -4,16 +4,31 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 16px;
+  gap: 14px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(14, 23, 45, 0.78), rgba(10, 16, 33, 0.72));
+  box-shadow: var(--panel-shadow);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.text {
+  font-size: 13px;
   color: var(--text-muted);
 }
-.title  { font-size: 24px; font-weight: 700; letter-spacing: 4px; color: var(--border); }
-.text   { font-size: 13px; }
+
 .badge {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(122, 175, 255, 0.3);
   border-radius: 99px;
   padding: 4px 16px;
   font-size: 10px;
-  letter-spacing: 2px;
+  letter-spacing: 0.12em;
 }

@@ -2,19 +2,18 @@
 Модели OSINT и аудита
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Boolean, Float, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Запрос
     service = Column(String(50), nullable=False)  # censys, shodan, apify, etc.
@@ -23,8 +22,8 @@ class AuditLog(Base):
     
     # Результат
     result_count = Column(Integer, default=0, nullable=False)
-    results = Column(JSONB, nullable=True)
-    summary = Column(JSONB, nullable=True)  # Агрегированные данные
+    results = Column(JSONType, nullable=True)
+    summary = Column(JSONType, nullable=True)  # Агрегированные данные
     
     # Метаданные
     response_time_ms = Column(Integer, nullable=True)
@@ -51,7 +50,7 @@ class AuditLog(Base):
     
     # Классификация
     risk_level = Column(String(20), nullable=True)  # low, medium, high, critical
-    categories = Column(JSONB, default=list, nullable=True)
+    categories = Column(JSONType, default=list, nullable=True)
     
     # Связи
     user = relationship("User")
@@ -63,8 +62,8 @@ class AuditLog(Base):
 class OSINTTarget(Base):
     __tablename__ = "osint_targets"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Цель
     target_type = Column(String(50), nullable=False)  # ip, domain, email, phone, etc.
@@ -86,7 +85,7 @@ class OSINTTarget(Base):
     change_count = Column(Integer, default=0, nullable=False)
     
     # Метаданные
-    osint_metadata = Column(JSONB, nullable=True)
+    osint_metadata = Column(JSONType, nullable=True)
     
     # Время
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

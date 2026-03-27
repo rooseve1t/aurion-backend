@@ -14,14 +14,19 @@ import aiohttp
 from fastapi import Depends
 
 from ..models.finance import BankConnection, BankAccount, Transaction
-from ..database import get_db
+from ..database_final import get_db
 
 # Redis для кэширования
 redis_client: Optional[redis.Redis] = None
 
 # Шифрование
-encryption_key = os.getenv("ENCRYPTION_KEY", Fernet.generate_key().decode())
-cipher_suite = Fernet(encryption_key.encode())
+_encryption_key = os.getenv("ENCRYPTION_KEY")
+if not _encryption_key:
+    raise RuntimeError(
+        "ENCRYPTION_KEY environment variable must be set. "
+        "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
+cipher_suite = Fernet(_encryption_key.encode())
 
 
 class FinanceService:
@@ -284,6 +289,81 @@ class FinanceService:
     
     async def get_financial_tips(self, user_id: str) -> List[Dict[str, Any]]:
         """Получение финансовых советов"""
+
+    async def get_quotes(self, symbols: List[str]) -> Dict[str, Any]:
+        """Получение котировок активов. Fallback на последние известные значения при недоступности API."""
+        results: Dict[str, Any] = {}
+        stale = False
+
+        for symbol in symbols:
+            # Пробуем получить из Redis кэша
+            if self.redis:
+                try:
+                    cached = await self.redis.get(f"quote:{symbol}")
+                    if cached:
+                        results[symbol] = json.loads(cached)
+                        continue
+                except Exception:
+                    pass
+
+            # Пробуем Yahoo Finance (бесплатный, без ключа)
+            try:
+                async with aiohttp.ClientSession() as session:
+                    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            price = data["chart"]["result"][0]["meta"]["regularMarketPrice"]
+                            prev = data["chart"]["result"][0]["meta"]["chartPreviousClose"]
+                            change_pct = ((price - prev) / prev * 100) if prev else 0
+                            quote = {
+                                "symbol": symbol,
+                                "price": price,
+                                "change_pct": round(change_pct, 2),
+                                "stale": False,
+                                "updated_at": datetime.now(timezone.utc).isoformat(),
+                            }
+                            results[symbol] = quote
+                            # Кэшируем на 5 минут
+                            if self.redis:
+                                await self.redis.setex(f"quote:{symbol}", 300, json.dumps(quote))
+                            continue
+            except Exception:
+                pass
+
+            # Fallback — последнее известное значение из Redis
+            stale = True
+            if self.redis:
+                try:
+                    last = await self.redis.get(f"quote_last:{symbol}")
+                    if last:
+                        q = json.loads(last)
+                        q["stale"] = True
+                        results[symbol] = q
+                        continue
+                except Exception:
+                    pass
+
+            # Совсем нет данных — заглушка
+            results[symbol] = {"symbol": symbol, "price": None, "stale": True, "error": "unavailable"}
+
+        return {"quotes": results, "stale": stale}
+
+    async def check_price_alerts(self, user_id: str, quotes: Dict[str, Any], threshold_pct: float = 5.0) -> List[Dict[str, Any]]:
+        """Проверяет котировки на превышение порога изменения и возвращает алерты."""
+        alerts = []
+        for symbol, data in quotes.get("quotes", {}).items():
+            change = abs(data.get("change_pct") or 0)
+            if change >= threshold_pct:
+                direction = "вырос" if (data.get("change_pct") or 0) > 0 else "упал"
+                alerts.append({
+                    "symbol": symbol,
+                    "change_pct": data.get("change_pct"),
+                    "price": data.get("price"),
+                    "message": f"Сэр, {symbol} {direction} на {change:.1f}%",
+                    "severity": "high" if change >= 10 else "medium",
+                })
+        return alerts
         
         analytics = await self.get_analytics(user_id, 30)
         

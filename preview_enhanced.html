@@ -19,6 +19,7 @@
     
     <!-- 🎨 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <!-- 🎨 Bioluminescent стили -->
     <style>
@@ -97,9 +98,13 @@
             animation: glow 3s linear infinite;
         }
 
-        @keyframes glow {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
         }
 
         /* 🎨 Плавающие частицы */
@@ -494,6 +499,41 @@
         <div class="max-w-7xl mx-auto px-4 py-8">
             <!-- 🎯 Обзор модуля -->
             <div id="overview" class="module fade-in">
+                <!-- ⚛️ JARVIS 3D HUD v3 -->
+                <div class="relative w-full max-w-4xl mx-auto h-[600px] mb-12">
+                    <!-- 3D Scene Container -->
+                    <div id="holographic-workshop" class="absolute inset-0 z-0"></div>
+                    
+                    <!-- HUD Overlays -->
+                    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-8 z-10">
+                        <div class="flex justify-between items-start">
+                            <div class="glass p-4 rounded-lg border-l-4 border-cyan-500 animate-slide-in">
+                                <div class="text-xs text-cyan-400 font-mono mb-1">SYSTEM_CORE_SYNC</div>
+                                <div class="text-xl font-bold text-white tracking-widest uppercase">JARVIS_OS_v23</div>
+                            </div>
+                            <div class="glass p-4 rounded-lg border-r-4 border-purple-500 text-right animate-slide-in-right">
+                                <div class="text-xs text-purple-400 font-mono mb-1">COGNITIVE_LOAD</div>
+                                <div class="text-xl font-bold text-white tracking-widest">0.042%_READY</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bottom HUD Stats -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="glass p-3 rounded border-b-2 border-blue-500">
+                                <div class="text-[10px] text-blue-400 font-mono">QUANTUM_BRIDGE</div>
+                                <div class="text-sm text-white">ACTIVE_LINK_01</div>
+                            </div>
+                            <div class="glass p-3 rounded border-b-2 border-red-500 text-center">
+                                <div class="text-[10px] text-red-400 font-mono">SENTINEL_SCAN</div>
+                                <div class="text-sm text-white">NO_THREATS</div>
+                            </div>
+                            <div class="glass p-3 rounded border-b-2 border-yellow-500 text-right">
+                                <div class="text-[10px] text-yellow-400 font-mono">FABRICATOR</div>
+                                <div class="text-sm text-white">IDLE_STANDBY</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- 🎨 Карточка с bioluminescent эффектом -->
                     <div class="glass hover-lift rounded-xl p-6 bioluminescent-glow">
@@ -542,24 +582,49 @@
                         </div>
                     </div>
 
-                    <div class="glass hover-lift rounded-xl p-6 bioluminescent-glow">
+                    <!-- 🛰️ Stage 17: Sentinel Protocol -->
+                    <div class="glass hover-lift rounded-xl p-6 bioluminescent-glow border-red-500/30">
                         <div class="relative">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-semibold text-white">Технологии</h3>
-                                <span class="text-2xl animate-spin">⚛️</span>
+                                <h3 class="text-xl font-semibold text-white">Протокол 'СТРАЖ'</h3>
+                                <span class="text-2xl animate-pulse">🛰️</span>
                             </div>
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-300">Квантовые вычисления</span>
-                                    <span class="text-purple-400 animate-pulse">✨ Активны</span>
+                                    <span class="text-gray-300">Периметр</span>
+                                    <span class="text-green-400">✅ Защищен</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-300">Векторная память</span>
-                                    <span class="text-blue-400 animate-pulse">🧠 Работает</span>
+                                    <span class="text-gray-300">Угрозы (24ч)</span>
+                                    <span class="text-red-400">0 активных</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-300">OSINT</span>
-                                    <span class="text-orange-400 animate-pulse">🔍 Готов</span>
+                                    <span class="text-gray-300">Контрмеры</span>
+                                    <span class="text-blue-400">Авто-режим</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🏗️ Stage 22: Fabricator & Vault -->
+                    <div class="glass hover-lift rounded-xl p-6 bioluminescent-glow border-yellow-500/30">
+                        <div class="relative">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold text-white">The Iron Protocol</h3>
+                                <span class="text-2xl animate-pulse">🏗️</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-300">Fabricator</span>
+                                    <span class="text-yellow-400">Ready to Build</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-300">Quantum Vault</span>
+                                    <span class="text-green-400">� Kyber-1024</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-300">Darknet Sentinel</span>
+                                    <span class="text-red-400">🛡️ Active</span>
                                 </div>
                             </div>
                         </div>
@@ -945,12 +1010,136 @@
                 });
         }
 
+        // 🧬 Stage 17: Эмоциональный резонанс
+        function updateResonance() {
+            const status = document.getElementById('resonance-status');
+            const moods = ['Спокойствие', 'Азарт', 'Анализ', 'Защита'];
+            let i = 0;
+            setInterval(() => {
+                status.textContent = moods[i];
+                status.className = `text-${['green', 'blue', 'purple', 'red'][i]}-400`;
+                i = (i + 1) % moods.length;
+            }, 3000);
+        }
+
+        // ⚛️ Stage 23: 3D Holographic Workshop (Three.js)
+        function init3DHUD() {
+            const container = document.getElementById('holographic-workshop');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // Центральное Ядро (Cognitive Core)
+            const coreGeometry = new THREE.IcosahedronGeometry(1, 1);
+            const coreMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00f2ff, 
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            scene.add(core);
+
+            // Внутреннее свечение ядра
+            const innerCoreGeom = new THREE.SphereGeometry(0.5, 32, 32);
+            const innerCoreMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
+            const innerCore = new THREE.Mesh(innerCoreGeom, innerCoreMat);
+            scene.add(innerCore);
+
+            // Узлы периферии (Memory, Sentinel, Fabricator)
+            const nodes = [];
+            const nodeCount = 6;
+            const orbitRadius = 3;
+
+            for (let i = 0; i < nodeCount; i++) {
+                const angle = (i / nodeCount) * Math.PI * 2;
+                const nodeGeom = new THREE.OctahedronGeometry(0.3);
+                const nodeMat = new THREE.MeshBasicMaterial({ 
+                    color: i % 2 === 0 ? 0x8b5cf6 : 0xec4899,
+                    wireframe: true 
+                });
+                const node = new THREE.Mesh(nodeGeom, nodeMat);
+                
+                node.position.x = Math.cos(angle) * orbitRadius;
+                node.position.z = Math.sin(angle) * orbitRadius;
+                
+                nodes.push({
+                    mesh: node,
+                    angle: angle,
+                    speed: 0.005 + (Math.random() * 0.01)
+                });
+                scene.add(node);
+
+                // Линии связи с ядром
+                const lineMat = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.2 });
+                const points = [new THREE.Vector3(0, 0, 0), node.position];
+                const lineGeom = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(lineGeom, lineMat);
+                scene.add(line);
+            }
+
+            // Звездная пыль (Data Particles)
+            const particlesGeom = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
+
+            particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMat = new THREE.PointsMaterial({ size: 0.02, color: 0xffffff });
+            const particlesMesh = new THREE.Points(particlesGeom, particlesMat);
+            scene.add(particlesMesh);
+
+            camera.position.z = 6;
+            camera.position.y = 1;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Анимация ядра
+                core.rotation.y += 0.01;
+                core.rotation.z += 0.005;
+                const pulse = 1 + Math.sin(Date.now() * 0.002) * 0.1;
+                core.scale.set(pulse, pulse, pulse);
+
+                // Анимация узлов
+                nodes.forEach((n, i) => {
+                    n.angle += n.speed;
+                    n.mesh.position.x = Math.cos(n.angle) * orbitRadius;
+                    n.mesh.position.z = Math.sin(n.angle) * orbitRadius;
+                    n.mesh.position.y = Math.sin(n.angle * 2) * 0.5;
+                    n.mesh.rotation.x += 0.02;
+                    n.mesh.rotation.y += 0.02;
+                });
+
+                particlesMesh.rotation.y += 0.001;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Обработка ресайза
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
         // 🎨 Инициализация
         document.addEventListener('DOMContentLoaded', () => {
             createParticles();
             initNavigation();
             initVoiceButton();
             checkConnection();
+            updateResonance();
+            init3DHUD();
             
             // Проверяем предпочтения темы
             if (window.matchMedia('(prefers-color-scheme: light)').matches) {

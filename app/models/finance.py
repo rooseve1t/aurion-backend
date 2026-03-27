@@ -2,19 +2,18 @@
 Модели финансового модуля
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class BankConnection(Base):
     __tablename__ = "bank_connections"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Банк
     bank_code = Column(String(20), nullable=False)  # sber, tinkoff, alpha, etc.
@@ -56,9 +55,9 @@ class BankConnection(Base):
 class BankAccount(Base):
     __tablename__ = "bank_accounts"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    bank_connection_id = Column(UUID(as_uuid=True), ForeignKey("bank_connections.id"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    bank_connection_id = Column(UUIDType, ForeignKey("bank_connections.id"), nullable=False, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Информация о счете
     external_id = Column(String(100), nullable=False)  # ID в системе банка
@@ -78,7 +77,7 @@ class BankAccount(Base):
     status = Column(String(20), default="active", nullable=False)
     
     # Метаданные
-    bank_metadata = Column(JSONB, nullable=True)
+    bank_metadata = Column(JSONType, nullable=True)
     
     # Временные метки
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -96,9 +95,9 @@ class BankAccount(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    account_id = Column(UUID(as_uuid=True), ForeignKey("bank_accounts.id"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    account_id = Column(UUIDType, ForeignKey("bank_accounts.id"), nullable=False, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Основная информация
     external_id = Column(String(100), nullable=True)  # ID в системе банка
@@ -123,11 +122,11 @@ class Transaction(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
     # Геолокация
-    location = Column(JSONB, nullable=True)  # {lat, lng, address}
+    location = Column(JSONType, nullable=True)  # {lat, lng, address}
     
     # Метаданные
-    bank_metadata = Column(JSONB, nullable=True)
-    tags = Column(JSONB, default=list, nullable=True)
+    bank_metadata = Column(JSONType, nullable=True)
+    tags = Column(JSONType, default=list, nullable=True)
     notes = Column(Text, nullable=True)
     is_recurring = Column(Boolean, default=False, nullable=False)
     

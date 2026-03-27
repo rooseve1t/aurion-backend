@@ -1,27 +1,67 @@
 """
 Финальная версия базы данных SQLAlchemy 2.0 с async поддержкой
 """
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.types import TypeDecorator, CHAR
+from sqlalchemy import JSON
+from sqlalchemy.dialects.postgresql import JSONB as PGJSONB
 import os
+import logging
 from typing import AsyncGenerator
+from dotenv import load_dotenv
+
+# Загрузка переменных окружения
+load_dotenv()
+
+# Настройка логирования
+logger = logging.getLogger("aurion-db")
 
 # Базовый класс для моделей
 class Base(DeclarativeBase):
     pass
 
+# Кросс-платформенный тип UUID (работает с PostgreSQL и SQLite)
+class UUIDType(TypeDecorator):
+    """UUID тип, совместимый с PostgreSQL и SQLite"""
+    impl = CHAR(36)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return uuid.UUID(value)
+
 # URL базы данных
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://aurion:password@localhost:5432/aurion"
+    "sqlite+aiosqlite:///./aurion.db"  # По умолчанию SQLite для простоты
 )
 
+# Определяем JSON тип в зависимости от базы данных
+JSONType = PGJSONB if 'postgresql' in DATABASE_URL.lower() else JSON
+
+# Настройки движка
+DB_ECHO = os.getenv("DB_ECHO", "false").lower() == "true"
+
 # Создание движка
+# Для SQLite нужны дополнительные настройки для async
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,  # Включить SQL логи для разработки
+    echo=DB_ECHO,
     pool_pre_ping=True,
     pool_recycle=3600,
+    connect_args=connect_args if DATABASE_URL.startswith("sqlite") else {}
 )
 
 # Создание фабрики сессий
@@ -38,6 +78,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
+        except Exception as e:
+            import traceback
+            logger.error(f"Database session error: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
         finally:
             await session.close()
 
@@ -45,14 +90,31 @@ async def init_db() -> None:
     """
     Инициализация базы данных - создание всех таблиц
     """
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            # Если это SQLite, включаем поддержку foreign keys
+            if DATABASE_URL.startswith("sqlite"):
+                from sqlalchemy import text
+                await conn.execute(text("PRAGMA foreign_keys = ON;"))
+                # Ensure deterministic test runs on local sqlite test database.
+                if "test_" in DATABASE_URL:
+                    await conn.run_sync(Base.metadata.drop_all)
+            
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Database schema initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize database: {e}")
+        raise
 
 async def close_db() -> None:
     """
     Закрытие соединений с базой данных
     """
-    await engine.dispose()
+    try:
+        await engine.dispose()
+        logger.info("🔌 Database connections closed")
+    except Exception as e:
+        logger.error(f"Error closing database connections: {e}")
 
 # Экспортируем метаданные для Alembic
 metadata = Base.metadata

@@ -2,32 +2,31 @@
 Модели квантовых вычислений
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class QuantumJob(Base):
     __tablename__ = "quantum_jobs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Задача
     job_type = Column(String(50), nullable=False)  # optimization, sampling, vqe, qubo, etc.
     algorithm = Column(String(100), nullable=True)  # VQE, QAOA, Grover, etc.
     
     # Входные данные
-    input_data = Column(JSONB, nullable=False)
-    parameters = Column(JSONB, default=dict, nullable=True)
+    input_data = Column(JSONType, nullable=False)
+    parameters = Column(JSONType, default=dict, nullable=True)
     problem_size = Column(Integer, nullable=True)  # N переменных, кубитов и т.д.
     
     # Бэкенд
     backend = Column(String(100), nullable=False)  # ionq, rigetti, dwave, quantum-rings, etc.
-    backend_config = Column(JSONB, nullable=True)
+    backend_config = Column(JSONType, nullable=True)
     shots = Column(Integer, default=1000, nullable=False)
     
     # Статус
@@ -35,8 +34,8 @@ class QuantumJob(Base):
     progress = Column(Integer, default=0, nullable=False)  # 0-100
     
     # Результаты
-    result = Column(JSONB, nullable=True)
-    solution = Column(JSONB, nullable=True)  # Оптимальное решение
+    result = Column(JSONType, nullable=True)
+    solution = Column(JSONType, nullable=True)  # Оптимальное решение
     objective_value = Column(Float, nullable=True)  # Значение целевой функции
     execution_time_ms = Column(Integer, nullable=True)
     quantum_volume = Column(Integer, nullable=True)
@@ -71,8 +70,8 @@ class QuantumJob(Base):
     cached_at = Column(DateTime(timezone=True), nullable=True)
     
     # Метаданные
-    quantum_metadata = Column(JSONB, nullable=True)
-    tags = Column(JSONB, default=list, nullable=True)
+    quantum_metadata = Column(JSONType, nullable=True)
+    tags = Column(JSONType, default=list, nullable=True)
     
     # Связи
     user = relationship("User", back_populates="quantum_jobs")

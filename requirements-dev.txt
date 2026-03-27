@@ -1,0 +1,13 @@
+# Dev & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
+mypy==1.7.1
+ruff==0.1.6
+hypothesis==6.92.1
+
+# Type stubs
+types-redis==4.6.0.11
+types-requests==2.31.0.10
+types-python-dateutil==2.8.19.14

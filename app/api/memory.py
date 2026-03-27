@@ -4,14 +4,15 @@ API роутер векторной памяти
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
 from pydantic import BaseModel
 
-from ..database import AsyncSessionLocal
+from ..database_final import AsyncSessionLocal
 from ..services.memory_service import MemoryService
 from ..api.auth import get_current_user, get_db_session
 from ..models.user import User
 
-router = APIRouter(prefix="/api/v1/memory", tags=["memory"])
+router = APIRouter(tags=["memory"])
 
 
 class MemoryCreate(BaseModel):
@@ -20,7 +21,7 @@ class MemoryCreate(BaseModel):
     tags: Optional[List[str]] = None
     categories: Optional[List[str]] = None
     importance: int = 5
-    metadata: Optional[Dict[str, Any]] = None
+    entry_metadata: Optional[Dict[str, Any]] = None
 
 
 class MemoryUpdate(BaseModel):
@@ -29,7 +30,7 @@ class MemoryUpdate(BaseModel):
     tags: Optional[List[str]] = None
     categories: Optional[List[str]] = None
     importance: Optional[int] = None
-    metadata: Optional[Dict[str, Any]] = None
+    entry_metadata: Optional[Dict[str, Any]] = None
 
 
 class MemoryResponse(BaseModel):
@@ -65,9 +66,22 @@ async def create_memory(
         tags=memory_data.tags,
         categories=memory_data.categories,
         importance=memory_data.importance,
-        metadata=memory_data.metadata
+        entry_metadata=memory_data.entry_metadata
     )
     
+    if isinstance(memory, dict):
+        memory_id = str(memory.get("id", ""))
+        return {
+            "id": memory_id,
+            "content": memory_data.content,
+            "title": memory_data.title,
+            "tags": memory_data.tags or [],
+            "categories": memory_data.categories or [],
+            "importance": memory_data.importance,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "message": "Memory created successfully"
+        }
+
     return {
         "id": str(memory.id),
         "content": memory.content,
@@ -126,7 +140,7 @@ async def get_memory(
         "tags": memory.tags or [],
         "categories": memory.categories or [],
         "importance": memory.importance,
-        "metadata": memory.metadata or {},
+        "entry_metadata": memory.entry_metadata or {},
         "created_at": memory.created_at.isoformat(),
         "updated_at": memory.updated_at.isoformat(),
         "access_count": memory.access_count,

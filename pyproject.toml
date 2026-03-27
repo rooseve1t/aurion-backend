@@ -1,0 +1,86 @@
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+# Строгий режим для основных модулей
+[[tool.mypy.overrides]]
+module = ["app.api.*", "app.services.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_unused_ignores = false
+
+# Исключения для модулей с внешними зависимостями
+[[tool.mypy.overrides]]
+module = [
+    "qiskit.*",
+    "qiskit_ibm_runtime.*",
+    "brainflow.*",
+    "mne.*",
+    "sentence_transformers.*",
+    "aiomqtt.*",
+    "azure.*",
+    "dwave.*",
+    "telegram.*",
+    "edge_tts.*",
+    "pyotp.*",
+    "qrcode.*",
+    "replicate.*",
+    "huggingface_hub.*",
+    "prometheus_fastapi_instrumentator.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "migrations",
+    "node_modules",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+ignore = [
+    "E501",   # line too long — контролируется line-length
+    "B008",   # do not perform function calls in default arguments (FastAPI Depends)
+    "B904",   # raise from — не всегда нужно
+    "UP007",  # use X | Y for union — Python 3.9 совместимость
+    "F401",   # unused import — часть импортов нужна для side effects
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

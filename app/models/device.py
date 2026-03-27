@@ -2,19 +2,18 @@
 Модель устройства умного дома
 """
 from sqlalchemy import Column, String, DateTime, Boolean, Text, Integer, Float, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class Device(Base):
     __tablename__ = "devices"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Основная информация
     name = Column(String(200), nullable=False)
@@ -24,7 +23,7 @@ class Device(Base):
     
     # Расположение
     room = Column(String(100), nullable=True)
-    location = Column(JSONB, nullable=True)  # Координаты, зона в комнате
+    location = Column(JSONType, nullable=True)  # Координаты, зона в комнате
     
     # Подключение
     protocol = Column(String(20), default="mqtt", nullable=False)  # mqtt, matter, zigbee, wifi, etc.
@@ -33,9 +32,9 @@ class Device(Base):
     status_topic = Column(String(200), nullable=True)
     
     # Состояние
-    state = Column(JSONB, default=dict, nullable=True)
-    capabilities = Column(JSONB, default=list, nullable=True)  # Доступные команды и параметры
-    settings = Column(JSONB, default=dict, nullable=True)  # Настройки устройства
+    state = Column(JSONType, default=dict, nullable=True)
+    capabilities = Column(JSONType, default=list, nullable=True)  # Доступные команды и параметры
+    settings = Column(JSONType, default=dict, nullable=True)  # Настройки устройства
     
     # Статус
     is_online = Column(Boolean, default=False, nullable=False)
@@ -44,7 +43,7 @@ class Device(Base):
     
     # Энергопотребление
     power_consumption = Column(Integer, nullable=True)  # Вт
-    energy_usage = Column(JSONB, nullable=True)  # История потребления
+    energy_usage = Column(JSONType, nullable=True)  # История потребления
     
     # Безопасность
     is_secure = Column(Boolean, default=True, nullable=False)
@@ -67,17 +66,17 @@ class Device(Base):
 class DeviceCommandLog(Base):
     __tablename__ = "device_command_log"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    device_id = Column(UUIDType, ForeignKey("devices.id"), nullable=False, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
     
     # Команда
     command = Column(String(100), nullable=False)
-    parameters = Column(JSONB, default=dict, nullable=True)
+    parameters = Column(JSONType, default=dict, nullable=True)
     
     # Результат
     success = Column(Boolean, nullable=False)
-    response = Column(JSONB, nullable=True)
+    response = Column(JSONType, nullable=True)
     error_message = Column(Text, nullable=True)
     
     # Время

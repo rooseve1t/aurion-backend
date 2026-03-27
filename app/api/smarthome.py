@@ -1,17 +1,21 @@
 """
 API роутер умного дома
 """
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel
+from uuid import UUID
 
-from ..database import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..database_final import get_db
+from ..models.device import Device
 from ..services.smarthome_service import get_smarthome_service
 from ..api.auth import get_current_user
 from ..models.user import User
 
-router = APIRouter(prefix="/api/v1/smarthome", tags=["smarthome"])
+router = APIRouter(tags=["smarthome"])
 
 
 class DeviceCreate(BaseModel):
@@ -124,6 +128,10 @@ async def control_device(
     smarthome_service = Depends(get_smarthome_service)
 ) -> Dict[str, Any]:
     """Управление устройством"""
+    try:
+        UUID(device_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid device id") from exc
     
     result = await smarthome_service.control_device(
         user_id=str(current_user.id),
@@ -228,31 +236,64 @@ async def get_device_types() -> List[Dict[str, Any]]:
 
 @router.get("/energy/stats")
 async def get_energy_stats(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     smarthome_service = Depends(get_smarthome_service)
 ) -> Dict[str, Any]:
     """Получение статистики энергопотребления"""
-    
-    # TODO: реализовать сбор статистики
-    
+    devices = await smarthome_service.get_devices(user_id=str(current_user.id))
+    rooms = {device.room for device in devices if device.room}
+    current_consumption = sum(device.power_consumption or 0 for device in devices if device.is_enabled)
+    daily_consumption = round(current_consumption * 8 / 1000, 2)
+    monthly_consumption = round(daily_consumption * 30, 2)
+
     return {
-        "current_consumption": 1250,  # Вт
-        "daily_consumption": 15.6,  # кВтч
-        "monthly_consumption": 468.0,  # кВтч
-        "estimated_cost": 2340.0,  # руб
-        "devices_count": 12,
-        "rooms_count": 5
+        "current_consumption": current_consumption,
+        "daily_consumption": daily_consumption,
+        "monthly_consumption": monthly_consumption,
+        "estimated_cost": round(monthly_consumption * 5.0, 2),
+        "devices_count": len(devices),
+        "rooms_count": len(rooms),
     }
+
+
+@router.get("/energy")
+async def get_energy_stats_compat(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    smarthome_service = Depends(get_smarthome_service)
+) -> Dict[str, Any]:
+    """Backward-compatible alias for /energy/stats."""
+    return await get_energy_stats(
+        db=db,
+        current_user=current_user,
+        smarthome_service=smarthome_service,
+    )
 
 
 @router.delete("/devices/{device_id}")
 async def delete_device(
     device_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     smarthome_service = Depends(get_smarthome_service)
 ) -> Dict[str, Any]:
     """Удаление устройства"""
-    
-    # TODO: реализовать удаление устройства
-    
+    try:
+        device_uuid = UUID(device_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid device id") from exc
+
+    result = await db.execute(
+        select(Device).where(
+            Device.id == device_uuid,
+            Device.user_id == current_user.id,
+        )
+    )
+    device = result.scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    await db.delete(device)
+    await db.commit()
     return {"message": "Device deleted successfully"}

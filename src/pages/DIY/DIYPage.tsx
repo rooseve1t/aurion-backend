@@ -45,13 +45,16 @@ export function DIYPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <Wrench size={20} color="var(--cyan)" />
-        <span className={styles.title}>DIY HUB</span>
+        <div className={styles.titleBlock}>
+          <Wrench size={20} color="var(--cyan)" />
+          <span className={styles.title}>DIY HUB</span>
+        </div>
+        <span className={styles.subtitle}>Arduino / ESP / MQTT LAB</span>
       </div>
       {instructions && (
         <div className={styles.card}>
           <div className={styles.sectionTitle}>MQTT: {instructions.mqtt_host}</div>
-          {instructions.quickstart.map((step) => <div key={step}>{step}</div>)}
+          {instructions.quickstart.map((step) => <div key={step} className={styles.step}>{step}</div>)}
           <div className={styles.mono}>{instructions.example_topics.join('\n')}</div>
         </div>
       )}
@@ -65,9 +68,9 @@ export function DIYPage() {
       <div className={styles.card}>
         <div className={styles.sectionTitle}>Мои скетчи</div>
         {sketches.map((row) => (
-          <div key={row.id}>#{row.id} {row.name} • {row.device_type} • {row.board}</div>
+          <div key={row.id} className={styles.sketchRow}>#{row.id} {row.name} • {row.device_type} • {row.board}</div>
         ))}
-        {sketches.length === 0 && <div>Пока пусто</div>}
+        {sketches.length === 0 && <div className={styles.empty}>Пока пусто</div>}
       </div>
     </div>
   )

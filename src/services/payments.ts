@@ -7,12 +7,12 @@ export const paymentsService = {
     return data
   },
 
-  async subscribe(tariffId: number, saveMethod = true): Promise<{
-    subscription_id: number; payment_id: string; confirmation_url: string
-    tariff_name: string; amount: string
+  async subscribe(tariffId: string | number, saveMethod = true): Promise<{
+    subscription_id: string; payment_id: string; confirmation_url: string
+    tariff_name: string; amount: number
   }> {
     const { data } = await api.post('/payments/subscribe', {
-      tariff_id: tariffId, save_payment_method: saveMethod,
+      tariff_id: String(tariffId), save_payment_method: saveMethod,
     })
     return data
   },
@@ -27,9 +27,9 @@ export const paymentsService = {
     return data
   },
 
-  async cancelSubscription(id: number): Promise<Subscription> {
-    const { data } = await api.post<Subscription>(`/payments/subscriptions/${id}/cancel`)
-    return data
+  async cancelSubscription(id: string | number): Promise<Subscription> {
+    const { data } = await api.post<{ subscription: Subscription }>(`/payments/subscriptions/${id}/cancel`)
+    return data.subscription
   },
 
   async listPayments(): Promise<{ payments: Payment[]; total: number }> {

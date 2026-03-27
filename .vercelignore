@@ -7,3 +7,17 @@ Dockerfile
 alembic.ini
 docker-compose.monitoring.yml
 docker-compose.prod.yml
+node_modules/
+dist/
+.git/
+.github/
+.pytest_cache/
+__pycache__/
+*.pyc
+htmlcov/
+.coverage
+.mypy_cache/
+.ruff_cache/
+test_*.py
+tests/
+GITHUB_WORKFLOW_TOKEN.md

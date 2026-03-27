@@ -1,53 +1,50 @@
 """
 🛡️ Модели VPN сервиса Aurion OS
 """
-from sqlalchemy import Column, String, DateTime, Boolean, Text, Integer, Float, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from typing import Optional, List, Any, Dict
 import uuid
 from datetime import datetime, timezone
 
 class VPNServer:
     """VPN сервер"""
     def __init__(self):
-        self.id = str(uuid.uuid4())
-        self.name = ""
-        self.country = ""
-        self.city = ""
-        self.protocol = "wireguard"
-        self.ip_address = ""
-        self.port = 51820
-        self.status = "active"
-        self.load = 0.0
-        self.is_dedicated = False
-        self.is_residential = False
-        self.is_mobile = False
-        self.speed_mbps = 100
-        self.latency_ms = 50
-        self.obfuscation_support = False
-        self.stealth_support = False
-        self.created_at = datetime.now(timezone.utc)
+        self.id: str = str(uuid.uuid4())
+        self.name: str = ""
+        self.country: str = ""
+        self.city: str = ""
+        self.protocol: str = "wireguard"
+        self.ip_address: str = ""
+        self.port: int = 51820
+        self.status: str = "active"
+        self.load: float = 0.0
+        self.is_dedicated: bool = False
+        self.is_residential: bool = False
+        self.is_mobile: bool = False
+        self.speed_mbps: float = 100.0
+        self.latency_ms: float = 50.0
+        self.obfuscation_support: bool = False
+        self.stealth_support: bool = False
+        self.created_at: datetime = datetime.now(timezone.utc)
 
 class VPNConnection:
     """VPN подключение пользователя"""
     def __init__(self):
-        self.id = str(uuid.uuid4())
-        self.user_id = ""
-        self.server_id = ""
-        self.protocol = "wireguard"
-        self.status = "disconnected"
-        self.connected_at = None
-        self.disconnected_at = None
-        self.bytes_sent = 0
-        self.bytes_received = 0
-        self.uptime_seconds = 0
-        self.current_ip = ""
-        self.obfuscation_level = "none"
-        self.stealth_mode = False
-        self.kill_switch_enabled = False
-        self.dns_leak_protection = True
-        self.ipv6_leak_protection = True
+        self.id: str = str(uuid.uuid4())
+        self.user_id: str = ""
+        self.server_id: str = ""
+        self.protocol: str = "wireguard"
+        self.status: str = "disconnected"
+        self.connected_at: Optional[datetime] = None
+        self.disconnected_at: Optional[datetime] = None
+        self.bytes_sent: int = 0
+        self.bytes_received: int = 0
+        self.uptime_seconds: int = 0
+        self.current_ip: str = ""
+        self.obfuscation_level: str = "none"
+        self.stealth_mode: bool = False
+        self.kill_switch_enabled: bool = False
+        self.dns_leak_protection: bool = True
+        self.ipv6_leak_protection: bool = True
 
 class BlockadeDetection:
     """Обнаружение блокировок"""
@@ -94,7 +91,7 @@ class VPNSession:
         self.quality_score = 1.0
 
 # 🛡️ КОНФИГУРАЦИЯ ПРОТОКОЛОВ
-VPN_PROTOCOLS = {
+VPN_PROTOCOLS: Dict[str, VPNProtocol] = {
     "wireguard": VPNProtocol("wireguard"),
     "openvpn": VPNProtocol("openvpn"),
     "shadowsocks": VPNProtocol("shadowsocks"),
@@ -139,7 +136,7 @@ VPN_PROTOCOLS["stealth_openvpn"].detection_resistance = 0.95
 # 📡 Источники: Tor Exit Nodes, Public Proxies, Free VPN
 
 # 🌍 РЕАЛЬНЫЕ БЕСПЛАТНЫЕ СЕРВЕРЫ
-VPN_SERVERS = [
+VPN_SERVERS: List[Dict[str, Any]] = [
     # 🧅 Tor Exit Nodes - ВЕЧНЫЕ и АНОНИМНЫЕ!
     {
         "id": "tor-exit-us-1",
@@ -334,7 +331,7 @@ VPN_SERVERS = [
 ]
 
 # 🛡️ ФУНКЦИЯ ПОЛУЧЕНИЯ ЛУЧШИХ СЕРВЕРОВ
-def get_best_vpn_servers(country: str = None, protocol: str = None) -> list:
+def get_best_vpn_servers(country: Optional[str] = None, protocol: Optional[str] = None) -> List[Any]:
     """🎯 Получить лучшие серверы по параметрам"""
     servers = VPN_SERVERS.copy()
     
@@ -357,36 +354,14 @@ def get_best_vpn_servers(country: str = None, protocol: str = None) -> list:
 # - Public Proxies: могут быть нестабильные
 # - Все сервера требуют проверки доступности
 
-# 🛡️ НАСТРОЙКИ БЕЗОПАСНОСТИ
-VPN_SECURITY_SETTINGS = {
-    "encryption": {
-        "cipher": "aes-256-gcm",
-        "key_exchange": "curve25519",
-        "hash": "sha256",
-        "perfect_forward_secrecy": True
-    },
-    "dns": {
-        "servers": [
-            "1.1.1.1",        # Cloudflare
-            "8.8.8.8",        # Google
-            "9.9.9.9",        # Quad9
-            "208.67.222.222"  # OpenDNS
-        ],
-        "dns_over_https": True,
-        "dns_over_tls": True,
-        "prevent_leaks": True
-    },
-    "kill_switch": {
-        "enabled": True,
-        "block_lan": False,
-        "allow_app_exceptions": []
-    },
-    "leak_protection": {
-        "ipv6": True,
-        "dns": True,
-        "webRTC": True,
-        "application": True
-    }
+# 🛡️ НАСТРОЙКИ БЕЗОПАСНОСТИ VPN
+VPN_SECURITY_SETTINGS: Dict[str, Any] = {
+    "kill_switch": True,
+    "dns_leak_protection": True,
+    "ipv6_leak_protection": True,
+    "mtu": 1420,
+    "keepalive": 25,
+    "encryption": "CHACHA20-POLY1305"
 }
 
 # 🎯 ТИПЫ БЛОКИРОВОК
@@ -400,31 +375,30 @@ BLOCKADE_TYPES = {
     "man_in_the_middle": "Атака посредника"
 }
 
-# 🚀 УРОВНИ ОБФУСКАЦИИ
-OBFUSCATION_LEVELS = {
+# 🎭 УРОВНИ ОБФУСКАЦИИ (DPI Resistance)
+OBFUSCATION_LEVELS: Dict[str, Dict[str, Any]] = {
     "none": {
-        "name": "Без обфускации",
-        "speed_factor": 1.0,
-        "detection_resistance": 0.0
+        "id": "none",
+        "name": "Без маскировки",
+        "dpi_resistance": 0.0,
+        "overhead": 0.0
     },
-    "light": {
-        "name": "Легкая обфускация",
-        "speed_factor": 0.95,
-        "detection_resistance": 0.4
+    "basic": {
+        "id": "basic",
+        "name": "Базовая (XOR)",
+        "dpi_resistance": 0.4,
+        "overhead": 0.05
     },
-    "medium": {
-        "name": "Средняя обфускация", 
-        "speed_factor": 0.85,
-        "detection_resistance": 0.7
+    "advanced": {
+        "id": "advanced",
+        "name": "Продвинутая (TLS/HTTPS)",
+        "dpi_resistance": 0.8,
+        "overhead": 0.15
     },
-    "heavy": {
-        "name": "Сильная обфускация",
-        "speed_factor": 0.7,
-        "detection_resistance": 0.9
-    },
-    "maximum": {
-        "name": "Максимальная обфускация",
-        "speed_factor": 0.5,
-        "detection_resistance": 0.95
+    "maximal": {
+        "id": "maximal",
+        "name": "Максимальная (Shadowsocks + v2ray)",
+        "dpi_resistance": 0.95,
+        "overhead": 0.25
     }
 }

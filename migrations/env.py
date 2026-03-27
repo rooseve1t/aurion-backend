@@ -4,6 +4,7 @@ from sqlalchemy import pool
 from alembic import context
 import os
 import sys
+import asyncio
 from pathlib import Path
 
 # Добавляем путь к корню проекта

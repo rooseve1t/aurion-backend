@@ -13,6 +13,12 @@ data/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.windsurf.local
 !.env.example
 !.env.production
 .vercel
+fabricated_projects/
+*.db
+*.log
+.github/
+! .github/workflows/

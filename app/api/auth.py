@@ -1,12 +1,15 @@
 """
 API роутер аутентификации
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, Optional, List
 
-from ..database import AsyncSessionLocal
+from ..database_final import get_db
+get_db_session = get_db
+
+
 from ..auth import (
     authenticate_user,
     create_user,
@@ -14,18 +17,26 @@ from ..auth import (
     create_refresh_token,
     store_refresh_token,
     verify_token,
+    verify_refresh_token,
     verify_totp,
     generate_totp_secret,
     generate_backup_codes,
     generate_qr_code,
-    verify_password
+    verify_password,
+    revoke_refresh_token,
+    get_user_by_id,
+    get_user_by_email
 )
 from ..models.user import User
+from ..middleware.auth_blacklist import add_to_blacklist
 from pydantic import BaseModel, EmailStr
+from datetime import datetime, timezone
+from jose import jwt as jose_jwt
+import os
 
-router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
+router = APIRouter(tags=["authentication"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token", auto_error=False)
 
 
 class UserRegister(BaseModel):
@@ -35,15 +46,15 @@ class UserRegister(BaseModel):
     display_name: Optional[str] = None
 
 
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 
 class TOTPSetupResponse(BaseModel):
@@ -54,23 +65,21 @@ class TOTPSetupResponse(BaseModel):
 
 class TOTPVerify(BaseModel):
     code: str
-    otp_token: str
-
-
-async def get_db_session() -> AsyncSession:
-    """Получение сессии базы данных"""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    otp_token: Optional[str] = None
 
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db)
 ) -> User:
     """Получение текущего пользователя"""
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     token_data = verify_token(token)
     if not token_data:
@@ -90,10 +99,30 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_optional(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """Получение текущего пользователя (опционально, не требует авторизации)"""
+    
+    if not token:
+        return None
+    
+    try:
+        token_data = verify_token(token)
+        if not token_data:
+            return None
+        
+        user = await get_user_by_id(db, token_data.user_id)
+        return user
+    except Exception:
+        return None
+
+
 @router.post("/register", response_model=TokenResponse)
 async def register(
     user_data: UserRegister,
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """Регистрация пользователя"""
     
@@ -127,7 +156,7 @@ async def register(
 @router.post("/token", response_model=TokenResponse)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """Вход в систему"""
     
@@ -161,15 +190,43 @@ async def login(
     }
 
 
+@router.post("/login", response_model=TokenResponse)
+async def login_json(
+    login_data: LoginRequest,
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """Вход через JSON (основной метод для фронтенда)"""
+    user = await authenticate_user(db, login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    access_token = create_access_token(
+        data={"sub": str(user.id), "email": user.email, "role": user.role}
+    )
+    refresh_token = create_refresh_token(str(user.id))
+    await store_refresh_token(str(user.id), refresh_token)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
-    refresh_token: str,
-    db: AsyncSession = Depends(get_db_session)
+    refresh_token: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """Обновление access токена"""
     
     # Проверка refresh токена
-    user_id = None  # TODO: извлечь user_id из refresh токена
+    user_id = await verify_refresh_token(refresh_token)
     
     if not user_id:
         raise HTTPException(
@@ -189,9 +246,16 @@ async def refresh_token(
         data={"sub": str(user.id), "email": user.email, "role": user.role}
     )
     
+    # Отзыв старого refresh токена
+    await revoke_refresh_token(str(user.id))
+    
+    # Создание нового refresh токена (rotation)
+    new_refresh_token = create_refresh_token(str(user.id))
+    await store_refresh_token(str(user.id), new_refresh_token)
+    
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
+        "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
 
@@ -211,7 +275,7 @@ async def get_current_user_info(
         "is_active": current_user.is_active,
         "is_verified": current_user.is_verified,
         "two_factor_enabled": current_user.two_factor_enabled,
-        "created_at": current_user.created_at.isoformat(),
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
         "last_login_at": current_user.last_login_at.isoformat() if current_user.last_login_at else None
     }
 
@@ -219,7 +283,7 @@ async def get_current_user_info(
 @router.post("/2fa/setup", response_model=TOTPSetupResponse)
 async def setup_2fa(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """Настройка двухфакторной аутентификации"""
     
@@ -252,7 +316,7 @@ async def setup_2fa(
 async def enable_2fa(
     data: TOTPVerify,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """Включение двухфакторной аутентификации"""
     
@@ -278,9 +342,9 @@ async def enable_2fa(
 
 @router.post("/2fa/disable")
 async def disable_2fa(
-    password: str,
+    password: str = Body(..., embed=True),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """Отключение двухфакторной аутентификации"""
     
@@ -302,11 +366,26 @@ async def disable_2fa(
 
 @router.post("/logout")
 async def logout(
+    token: str = Depends(oauth2_scheme),
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Выход из системы"""
-    
     # Отзыв refresh токена
     await revoke_refresh_token(str(current_user.id))
-    
+
+    # Добавить access token в blacklist
+    if token:
+        try:
+            SECRET_KEY = os.getenv("JWT_SECRET", "change-me-in-production")
+            payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            jti = payload.get("jti") or payload.get("sub", "")
+            exp = payload.get("exp", 0)
+            now = int(datetime.now(timezone.utc).timestamp())
+            ttl = max(exp - now, 0)
+            if ttl > 0 and jti:
+                await add_to_blacklist(jti, ttl)
+        except Exception:
+            pass
+
     return {"message": "Logged out successfully"}
+

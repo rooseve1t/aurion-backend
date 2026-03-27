@@ -1,0 +1,18 @@
+# Optional — quantum computing (requires hardware/cloud access)
+qiskit==0.45.0
+qiskit-ibm-runtime==0.15.1
+
+# Optional — BCI/neuro interface (requires BrainFlow hardware)
+mne==1.6.0
+brainflow==5.12.1
+
+# Optional — ML embeddings (heavy, ~500MB)
+sentence-transformers==2.2.2
+scipy==1.11.4
+
+# Optional — local STT (requires model download ~50MB)
+# whisper==1.1.10  # install via: pip install openai-whisper
+
+# Optional — image/music generation
+# replicate  # install via: pip install replicate
+# huggingface_hub  # install via: pip install huggingface_hub

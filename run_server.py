@@ -3,8 +3,6 @@
 Запуск сервера Aurion OS
 """
 import sys
-import os
-import subprocess
 from pathlib import Path
 
 # Добавляем текущую директорию в Python path
@@ -14,9 +12,6 @@ sys.path.insert(0, str(current_dir))
 def main():
     """Запуск FastAPI сервера"""
     try:
-        # Импортируем приложение
-        from app.main_simple import app
-        
         # Запускаем uvicorn
         import uvicorn
         
@@ -27,7 +22,7 @@ def main():
         print("="*50)
         
         uvicorn.run(
-            app,
+            "app.main_fastapi_fixed:app",
             host="0.0.0.0",
             port=8000,
             reload=True,

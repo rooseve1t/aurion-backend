@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd --create-home --uid 10001 appuser
 
 # Install Python dependencies first (better layer caching)
-COPY requirements.railway.txt .
-RUN pip install --no-cache-dir -r requirements.railway.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend application code only
 COPY app/ ./app/

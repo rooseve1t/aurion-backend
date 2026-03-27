@@ -7,32 +7,50 @@
   gap: 16px;
 }
 
-.header { display: flex; justify-content: space-between; align-items: center; }
-.title  { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.title  { font-size: 16px; font-weight: 800; letter-spacing: 0.12em; }
 
 .swarmPanel {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(12, 16, 29, 0.88), rgba(8, 10, 21, 0.84));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
+  box-shadow: var(--panel-shadow), var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.swarmPanel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 36% at 0% 0%, rgba(124, 58, 237, 0.1), transparent 34%),
+    radial-gradient(100% 32% at 100% 0%, rgba(0, 212, 255, 0.08), transparent 40%);
+  pointer-events: none;
 }
 .swarmTitle {
   font-size: 10px;
-  color: var(--purple);
-  letter-spacing: 2px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
   margin-bottom: 10px;
 }
 .swarmForm { display: flex; gap: 8px; }
 
 .addForm {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(12, 16, 29, 0.88), rgba(8, 10, 21, 0.84));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   animation: fade-in 0.2s ease;
+  box-shadow: var(--panel-shadow), var(--glass-shadow);
 }
 
 .body {
@@ -47,34 +65,53 @@
 .sectionTitle {
   font-size: 10px;
   color: var(--text-muted);
-  letter-spacing: 2px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.agentList { display: flex; flex-direction: column; gap: 6px; }
+.agentList { display: flex; flex-direction: column; gap: 10px; }
 .agentCard {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(12, 16, 28, 0.88), rgba(8, 10, 21, 0.84));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 12px 14px;
+  transition: border-color var(--transition), transform var(--transition);
+  box-shadow: 0 14px 26px rgba(6, 12, 26, 0.26);
 }
-.agentName { font-size: 12px; font-weight: 500; }
-.agentType { font-size: 10px; color: var(--text-muted); }
 
-.taskList { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.agentCard:hover {
+  border-color: rgba(0, 212, 255, 0.24);
+  transform: translateY(-2px);
+}
+.agentName { font-size: 12px; font-weight: 700; }
+.agentType { font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.taskList { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .taskCard {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(12, 16, 28, 0.88), rgba(8, 10, 21, 0.84));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 12px 14px;
+  transition: border-color var(--transition), transform var(--transition);
+  box-shadow: 0 14px 26px rgba(6, 12, 26, 0.24);
 }
-.taskAction { font-size: 12px; font-weight: 500; }
-.taskMeta   { font-size: 10px; color: var(--text-muted); }
+
+.taskCard:hover {
+  border-color: rgba(0, 212, 255, 0.22);
+  transform: translateY(-2px);
+}
+.taskAction { font-size: 12px; font-weight: 700; }
+.taskMeta   { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.08em; }
 
 .cancelBtn {
   background: none; border: none;
@@ -90,4 +127,5 @@
 
 @media (max-width: 600px) {
   .body { grid-template-columns: 1fr; }
+  .swarmForm { flex-direction: column; }
 }

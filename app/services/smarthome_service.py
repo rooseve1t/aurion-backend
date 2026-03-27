@@ -19,7 +19,7 @@ except ImportError:
     MQTT_AVAILABLE = False
 
 from ..models.device import Device, DeviceCommandLog
-from ..database import get_db
+from ..database_final import get_db
 
 # Redis для кэширования
 redis_client: Optional[redis.Redis] = None
@@ -31,6 +31,7 @@ class SmartHomeService:
         self.redis = redis_client
         self.mqtt_client = None
         self.device_states = {}  # Локальное кэширование состояний
+        self._mqtt_task: Optional[asyncio.Task] = None  # Ссылка на задачу MQTT
         
         # MQTT настройки
         self.mqtt_host = os.getenv("MQTT_HOST", "localhost")
@@ -38,8 +39,8 @@ class SmartHomeService:
         self.mqtt_username = os.getenv("MQTT_USERNAME", "")
         self.mqtt_password = os.getenv("MQTT_PASSWORD", "")
         
-        # Инициализация MQTT
-        asyncio.create_task(self._init_mqtt())
+        # Инициализация MQTT с сохранением ссылки
+        self._mqtt_task = asyncio.create_task(self._init_mqtt())
     
     async def _init_mqtt(self):
         """Инициализация MQTT клиента"""
@@ -426,7 +427,8 @@ class SmartHomeService:
             "status": "success",
             "success": True,
             "response": new_state,
-            "device_id": str(device.id)
+            "device_id": str(device.id),
+            "simulated": True  # Флаг симуляции — реального устройства нет
         }
     
     async def _log_device_command(

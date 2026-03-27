@@ -3,6 +3,7 @@ import { User, Shield, Key, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { authService } from '@/services/auth'
 import { useToast } from '@/hooks/useToast'
+import { voiceSocket } from '@/services/voice'
 import { formatDate } from '@/utils'
 import type { VoicePersona } from '@/types'
 import styles from './ProfilePage.module.css'
@@ -16,6 +17,7 @@ export function ProfilePage() {
   const [loading2FA, setLoading2FA] = useState(false)
   const [voicePersona, setVoicePersona] = useState<VoicePersona>('calm')
   const [voiceSaving, setVoiceSaving] = useState(false)
+  const [voicePreviewLoading, setVoicePreviewLoading] = useState(false)
 
   useEffect(() => {
     authService.getPreferences()
@@ -65,6 +67,18 @@ export function ProfilePage() {
       toast.error('Не удалось сохранить голосовой профиль')
     } finally {
       setVoiceSaving(false)
+    }
+  }
+
+  const handleVoicePreview = async () => {
+    setVoicePreviewLoading(true)
+    try {
+      await voiceSocket.preview('Здравствуйте. Голосовой контур Aurion активен и готов к работе.', voicePersona)
+      toast.success('Голосовой пример воспроизведён')
+    } catch {
+      toast.error('Не удалось воспроизвести голосовой пример')
+    } finally {
+      setVoicePreviewLoading(false)
     }
   }
 
@@ -149,6 +163,9 @@ export function ProfilePage() {
             </select>
             <button className="btn btn-cyan" onClick={handleVoicePersonaSave} disabled={voiceSaving}>
               {voiceSaving ? 'СОХРАНЕНИЕ...' : 'СОХРАНИТЬ'}
+            </button>
+            <button className="btn btn-ghost" onClick={handleVoicePreview} disabled={voicePreviewLoading}>
+              {voicePreviewLoading ? 'ЗАГРУЗКА ПРИМЕРА...' : 'ПРОСЛУШАТЬ ПРИМЕР'}
             </button>
           </div>
         </div>

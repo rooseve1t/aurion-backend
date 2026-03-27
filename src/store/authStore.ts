@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { User } from '@/types'
 import { authService } from '@/services/auth'
+import { AUTH_CLEARED_EVENT, AUTH_UPDATED_EVENT } from '@/services/api'
 
 interface AuthState {
   user: User | null
@@ -32,6 +33,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
     set({ accessToken: access, refreshToken: refresh })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(AUTH_UPDATED_EVENT, {
+        detail: { accessToken: access, refreshToken: refresh },
+      }))
+    }
   },
 
   setUser: (u) => set({ user: u }),
@@ -86,8 +92,48 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const user = await authService.getMe()
       set({ user })
-    } catch {
-      // token expired - handled by interceptor
+    } catch (e: unknown) {
+      const isNetworkError = !(e as { response?: unknown })?.response
+      if (isNetworkError) {
+        // Сетевая ошибка — не сбрасываем сессию, просто логируем
+        console.warn('[AuthStore] Network error in fetchMe, keeping session')
+        return
+      }
+      // 401 или другая HTTP ошибка — сбрасываем только если нет токена
+      const accessToken = localStorage.getItem('access_token')
+      if (!accessToken) {
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: localStorage.getItem('refresh_token'),
+          needs2FA: false,
+          pending2FAToken: null,
+        })
+      }
     }
   },
 }))
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(AUTH_CLEARED_EVENT, () => {
+    useAuthStore.setState({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      needs2FA: false,
+      pending2FAToken: null,
+      isLoading: false,
+      error: null,
+    })
+  })
+
+  window.addEventListener(AUTH_UPDATED_EVENT, ((event: Event) => {
+    const detail = (event as CustomEvent<{ accessToken?: string; refreshToken?: string }>).detail
+    if (!detail) return
+    useAuthStore.setState((state) => ({
+      ...state,
+      accessToken: detail.accessToken ?? state.accessToken,
+      refreshToken: detail.refreshToken ?? state.refreshToken,
+    }))
+  }) as EventListener)
+}

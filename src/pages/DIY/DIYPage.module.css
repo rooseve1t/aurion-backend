@@ -1,39 +1,80 @@
 .page {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.titleBlock {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .title {
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
 }
 
 .card {
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 12px;
+  padding: 14px;
   display: grid;
-  gap: 8px;
-  background: rgba(8, 18, 24, 0.64);
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(14, 23, 45, 0.8), rgba(10, 16, 33, 0.74));
+  box-shadow: var(--panel-shadow);
 }
 
 .sectionTitle {
-  font-size: 12px;
-  color: var(--cyan);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.step {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sketchRow {
+  border: 1px solid rgba(122, 175, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .mono {
   white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-muted);
+  border: 1px solid rgba(122, 175, 255, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(8, 14, 29, 0.64);
 }
 
 .textarea {
@@ -41,6 +82,15 @@
   border-radius: 10px;
   border: 1px solid var(--border);
   background: rgba(6, 14, 19, 0.7);
-  color: var(--text-main);
+  color: var(--text);
   padding: 10px;
+  font-family: var(--font-mono);
+}
+
+.empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px;
+  border: 1px dashed rgba(122, 175, 255, 0.26);
+  border-radius: 10px;
 }

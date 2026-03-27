@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Aurion: Vercel Pull",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/scripts/vercel-pull.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Aurion: Deploy Vercel Production",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/scripts/deploy-vercel.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Aurion: Railway WhoAmI",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/scripts/railway-whoami.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Aurion: Railway Link Project",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/scripts/railway-link.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Aurion: Deploy Railway",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/scripts/deploy-railway.sh",
+      "problemMatcher": []
+    }
+  ]
+}

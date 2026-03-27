@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, List
 from pydantic import BaseModel
 
-from ..database import get_db
+from ..database_final import get_db
 from ..services.quantum_service import get_quantum_service
+from ..services.jarvis.personality_engine import get_personality_engine
 from ..api.auth import get_current_user
 from ..models.user import User
 
-router = APIRouter(prefix="/api/v1/quantum", tags=["quantum"])
+router = APIRouter(tags=["quantum"])
 
 
 class QuboRequest(BaseModel):
@@ -57,6 +58,24 @@ async def solve_qubo(
     return result
 
 
+@router.post("/solve")
+async def solve_qubo_compat(
+    payload: Dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    quantum_service = Depends(get_quantum_service)
+) -> Dict[str, Any]:
+    """Backward-compatible alias for QUBO solving."""
+    matrix = payload.get("qubo_matrix") or payload.get("matrix")
+    if not isinstance(matrix, list):
+        raise HTTPException(status_code=400, detail="qubo_matrix is required")
+    request = QuboRequest(matrix=matrix)
+    return await solve_qubo(
+        request=request,
+        current_user=current_user,
+        quantum_service=quantum_service,
+    )
+
+
 @router.post("/optimize_portfolio")
 async def optimize_portfolio(
     request: PortfolioRequest,
@@ -100,6 +119,27 @@ async def run_vqe(
     return result
 
 
+@router.post("/vqe")
+async def run_vqe_compat(
+    payload: Dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    quantum_service = Depends(get_quantum_service)
+) -> Dict[str, Any]:
+    """Backward-compatible alias for VQE endpoint."""
+    hamiltonian = payload.get("hamiltonian")
+    if hamiltonian is None:
+        hamiltonian = {
+            "molecule": payload.get("molecule", "H2"),
+            "basis": payload.get("basis", "sto-3g"),
+        }
+    request = VQERequest(hamiltonian=hamiltonian)
+    return await run_vqe(
+        request=request,
+        current_user=current_user,
+        quantum_service=quantum_service,
+    )
+
+
 @router.get("/backends")
 async def get_quantum_backends(
     current_user: User = Depends(get_current_user),
@@ -131,17 +171,32 @@ async def get_job_status(
     return status
 
 
-@router.get("/jobs")
-async def list_user_jobs(
-    current_user: User = Depends(get_current_user),
-    quantum_service = Depends(get_quantum_service)
-) -> List[Dict[str, Any]]:
-    """Получение списка задач пользователя"""
+@router.post("/biometric/sync")
+async def sync_biometric_data(
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Синхронизация биометрических данных (Stage 15 Mock)"""
+    heart_rate = data.get("heart_rate", 70)
+    stress_level = data.get("stress_level", 0.2)
     
-    # TODO: реализовать получение списка задач из базы данных
+    # Реакция JARVIS
+    personality = await get_personality_engine()
+    response = "Все показатели в норме, сэр."
     
-    return []
+    if heart_rate > 100 or stress_level > 0.7:
+        response = "Сэр, ваш пульс зашкаливает. Я активирую протокол 'Тишина' и приглушу уведомления. Подышите."
+    elif heart_rate < 50:
+        response = "Сэр, вы еще живы? Пульс подозрительно низкий. Может, чашку кофе?"
 
+    return {
+        "status": "synced",
+        "jarvis_comment": response,
+        "metrics_received": {
+            "heart_rate": heart_rate,
+            "stress_level": stress_level
+        }
+    }
 
 @router.delete("/jobs/{job_id}")
 async def cancel_job(

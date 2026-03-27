@@ -1,19 +1,18 @@
 """
 Модель пользователя
 """
-from sqlalchemy import Column, String, DateTime, Boolean, Text, Integer, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+import uuid
+from sqlalchemy import Column, String, DateTime, Boolean, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(64), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
@@ -21,7 +20,7 @@ class User(Base):
     # 2FA
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String(32), nullable=True)
-    backup_codes = Column(JSONB, nullable=True)
+    backup_codes = Column(JSONType, nullable=True)
     
     # Роли и статус
     role = Column(String(20), default="user", nullable=False)  # user, admin, creator
@@ -34,7 +33,7 @@ class User(Base):
     bio = Column(Text, nullable=True)
     
     # Настройки
-    preferences = Column(JSONB, default=dict, nullable=True)
+    preferences = Column(JSONType, default=dict, nullable=True)
     notifications_enabled = Column(Boolean, default=True, nullable=False)
     
     # Временные метки

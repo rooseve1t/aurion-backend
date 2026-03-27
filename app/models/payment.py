@@ -2,18 +2,17 @@
 Модели платежной системы и подписок
 """
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from ..database import Base
+from ..database_final import Base, UUIDType, JSONType
 
 
 class Tariff(Base):
     __tablename__ = "tariffs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
     
     # Основная информация
     name = Column(String(100), unique=True, nullable=False)
@@ -27,8 +26,8 @@ class Tariff(Base):
     trial_days = Column(Integer, default=0, nullable=False)
     
     # Функции
-    features = Column(JSONB, default=dict, nullable=True)  # {voice: true, memory_limit: 1000, ...}
-    limits = Column(JSONB, default=dict, nullable=True)  # Лимиты по функциям
+    features = Column(JSONType, default=dict, nullable=True)  # {voice: true, memory_limit: 1000, ...}
+    limits = Column(JSONType, default=dict, nullable=True)  # Лимиты по функциям
     
     # Статус
     is_active = Column(Boolean, default=True, nullable=False)
@@ -53,9 +52,9 @@ class Tariff(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    tariff_id = Column(UUID(as_uuid=True), ForeignKey("tariffs.id"), nullable=False, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
+    tariff_id = Column(UUIDType, ForeignKey("tariffs.id"), nullable=False, index=True)
     
     # Статус
     status = Column(String(20), default="active", nullable=False)  # active, cancelled, expired, trial
@@ -76,7 +75,7 @@ class Subscription(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
     # Метаданные
-    payment_metadata = Column(JSONB, nullable=True)
+    payment_metadata = Column(JSONType, nullable=True)
     
     # Связи
     user = relationship("User", back_populates="subscriptions")
@@ -90,9 +89,9 @@ class Subscription(Base):
 class Payment(Base):
     __tablename__ = "payments"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id"), nullable=True, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUIDType, ForeignKey("users.id"), nullable=False, index=True)
+    subscription_id = Column(UUIDType, ForeignKey("subscriptions.id"), nullable=True, index=True)
     
     # Платежная система
     provider = Column(String(20), default="yookassa", nullable=False)  # yookassa, stripe, etc.
@@ -108,11 +107,11 @@ class Payment(Base):
     
     # Описание
     description = Column(Text, nullable=False)
-    transaction_metadata = Column(JSONB, nullable=True)
+    transaction_metadata = Column(JSONType, nullable=True)
     
     # Способ оплаты
     payment_method = Column(String(50), nullable=True)  # card, sbp, etc.
-    payment_method_details = Column(JSONB, nullable=True)
+    payment_method_details = Column(JSONType, nullable=True)
     
     # Время
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -122,7 +121,7 @@ class Payment(Base):
     
     # Возвраты
     refunded_amount = Column(Float, default=0.0, nullable=False)
-    refunds = Column(JSONB, default=list, nullable=True)
+    refunds = Column(JSONType, default=list, nullable=True)
     
     # Комиссии
     fee = Column(Float, nullable=True)

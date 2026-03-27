@@ -1,0 +1,181 @@
+/**
+ * JARVIS HUD Theme — Aurion OS
+ * Тёмный фон, неоновые акценты, glassmorphism, glow-эффекты
+ */
+
+:root {
+  /* ─── Основные цвета ─────────────────────────────────────────────────── */
+  --hud-bg:            #0a0a0f;
+  --hud-bg-surface:    #0d0d18;
+  --hud-bg-panel:      rgba(0, 212, 255, 0.04);
+
+  --hud-accent:        #00d4ff;
+  --hud-accent-2:      #0080ff;
+  --hud-accent-green:  #00ff88;
+  --hud-accent-yellow: #ffd700;
+  --hud-accent-red:    #ff4444;
+  --hud-accent-purple: #8b5cf6;
+
+  --hud-text:          #e0f4ff;
+  --hud-text-dim:      rgba(224, 244, 255, 0.5);
+  --hud-text-muted:    rgba(224, 244, 255, 0.3);
+
+  /* ─── Glassmorphism панели ───────────────────────────────────────────── */
+  --glass-bg:          rgba(0, 212, 255, 0.05);
+  --glass-border:      1px solid rgba(0, 212, 255, 0.2);
+  --glass-blur:        blur(12px);
+  --glass-shadow:      0 4px 24px rgba(0, 0, 0, 0.6);
+
+  /* ─── Glow-эффекты ───────────────────────────────────────────────────── */
+  --glow-cyan:         0 0 8px rgba(0, 212, 255, 0.6), 0 0 24px rgba(0, 212, 255, 0.3);
+  --glow-blue:         0 0 8px rgba(0, 128, 255, 0.6), 0 0 24px rgba(0, 128, 255, 0.3);
+  --glow-green:        0 0 8px rgba(0, 255, 136, 0.6), 0 0 24px rgba(0, 255, 136, 0.3);
+  --glow-yellow:       0 0 8px rgba(255, 215, 0, 0.6),  0 0 24px rgba(255, 215, 0, 0.3);
+  --glow-red:          0 0 8px rgba(255, 68, 68, 0.6),  0 0 24px rgba(255, 68, 68, 0.3);
+
+  --text-glow-cyan:    0 0 6px rgba(0, 212, 255, 0.8);
+  --text-glow-green:   0 0 6px rgba(0, 255, 136, 0.8);
+
+  /* ─── Типографика ────────────────────────────────────────────────────── */
+  --font-hud:          'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-ui:           'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  /* ─── Анимации ───────────────────────────────────────────────────────── */
+  --transition-fast:   150ms ease;
+  --transition-normal: 300ms ease;
+}
+
+/* ─── Базовые стили HUD ──────────────────────────────────────────────────── */
+
+.hud-root {
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+}
+
+/* Glassmorphism панель */
+.glass-panel {
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  border-radius: 8px;
+}
+
+/* Неоновый текст */
+.neon-text {
+  color: var(--hud-accent);
+  text-shadow: var(--text-glow-cyan);
+}
+
+.neon-text-green {
+  color: var(--hud-accent-green);
+  text-shadow: var(--text-glow-green);
+}
+
+/* Неоновая кнопка */
+.neon-btn {
+  background: transparent;
+  border: 1px solid var(--hud-accent);
+  color: var(--hud-accent);
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-hud);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: var(--transition-fast);
+}
+
+.neon-btn:hover {
+  background: rgba(0, 212, 255, 0.1);
+  box-shadow: var(--glow-cyan);
+}
+
+.neon-btn:active {
+  background: rgba(0, 212, 255, 0.2);
+}
+
+/* Разделитель */
+.hud-divider {
+  border: none;
+  border-top: 1px solid rgba(0, 212, 255, 0.15);
+  margin: 12px 0;
+}
+
+/* Статусный индикатор */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hud-accent-green);
+  box-shadow: var(--glow-green);
+}
+
+.status-dot.offline {
+  background: var(--hud-accent-red);
+  box-shadow: var(--glow-red);
+}
+
+.status-dot.warning {
+  background: var(--hud-accent-yellow);
+  box-shadow: var(--glow-yellow);
+}
+
+/* ─── Анимации ───────────────────────────────────────────────────────────── */
+
+@keyframes hud-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes hud-scan {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  50%  { opacity: 0.6; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes hud-flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96%           { opacity: 0.8; }
+  97%           { opacity: 1; }
+  98%           { opacity: 0.6; }
+}
+
+@keyframes particle-float {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.3; }
+  100% { transform: translateY(-80px) translateX(20px); opacity: 0; }
+}
+
+.animate-pulse-hud {
+  animation: hud-pulse 2s ease-in-out infinite;
+}
+
+.animate-flicker {
+  animation: hud-flicker 8s ease-in-out infinite;
+}
+
+/* ─── Скроллбар в стиле HUD ──────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--hud-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.3);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.6);
+}

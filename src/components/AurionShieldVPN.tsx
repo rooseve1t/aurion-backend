@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, Alert, Slider, Switch, Tooltip, Progress } from '@/components/ui';
-import { Shield, Server, Activity, Lock, Unlock, Globe, Zap, Eye, EyeOff } from 'lucide-react';
+import { Card, Button, Badge, Switch, Progress } from '@/components/ui';
+import { Shield, Lock, Unlock, Eye } from 'lucide-react';
 
 interface VPNStatus {
   status: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';

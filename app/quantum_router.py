@@ -5,14 +5,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 try:
-    from app.services.quantum_extra import (
-        IBMQuantumAdapter,
-        PasqalAdapter,
-        AlibabaQuantumAdapter,
-    )
+    from .services import quantum_extra # type: ignore
+    IBMQuantumAdapter: Any = getattr(quantum_extra, "IBMQuantumAdapter", None)
+    PasqalAdapter: Any = getattr(quantum_extra, "PasqalAdapter", None)
+    AlibabaQuantumAdapter: Any = getattr(quantum_extra, "AlibabaQuantumAdapter", None)
 except Exception:
     # Fallback if optional package structure unavailable in older stage builds.
-    IBMQuantumAdapter = PasqalAdapter = AlibabaQuantumAdapter = None  # type: ignore
+    IBMQuantumAdapter = PasqalAdapter = AlibabaQuantumAdapter = None
 
 
 @dataclass
@@ -31,8 +30,8 @@ class QuantumRouter:
     def _can_use_hpc(self) -> bool:
         return bool(self.hpc_url.strip() and self.hpc_user.strip() and self.hpc_password.strip())
 
-    def _extra_adapters(self) -> list:
-        adapters = []
+    def _extra_adapters(self) -> list[Any]:
+        adapters: list[Any] = []
         if IBMQuantumAdapter:
             adapters.append(IBMQuantumAdapter())
         if PasqalAdapter:

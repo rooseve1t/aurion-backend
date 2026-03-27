@@ -6,6 +6,7 @@ import io
 import base64
 import tempfile
 import os
+import logging
 from typing import Optional, Dict, Any, List
 import json
 import numpy as np
@@ -17,6 +18,8 @@ import aiohttp
 import openai
 from pydub import AudioSegment
 from sqlalchemy import false
+
+logger = logging.getLogger("aurion-voice")
 
 # 🏆 ЗОЛОТОЙ СТАНДАРТ: Настройки для разных TTS провайдеров
 TTS_PROVIDERS = {
@@ -129,6 +132,112 @@ class VoiceJarvisService:
             }
         }
     
+    # ─── Новые методы: synthesize / transcribe с fallback ───────────────────
+
+    async def synthesize(self, text: str) -> bytes:
+        """TTS: ElevenLabs → edge-tts fallback"""
+        from ..config import settings
+        if settings.ELEVENLABS_API_KEY:
+            try:
+                result = await self._tts_elevenlabs_v2(text, settings)
+                if result:
+                    return result
+            except Exception as e:
+                logger.warning(f"ElevenLabs недоступен, переключаюсь на edge-tts: {e}")
+        return await self._tts_edge(text)
+
+    async def _tts_elevenlabs_v2(self, text: str, settings: Any) -> Optional[bytes]:
+        """ElevenLabs TTS с параметрами из config"""
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.ELEVENLABS_VOICE_ID}"
+        headers = {"xi-api-key": settings.ELEVENLABS_API_KEY, "Content-Type": "application/json"}
+        data = {
+            "text": text,
+            "model_id": "eleven_multilingual_v2",
+            "voice_settings": {
+                "stability": settings.ELEVENLABS_STABILITY,
+                "similarity_boost": settings.ELEVENLABS_SIMILARITY_BOOST,
+                "style": settings.ELEVENLABS_STYLE,
+                "use_speaker_boost": True,
+            },
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=data) as resp:
+                if resp.status == 200:
+                    return await resp.read()
+                logger.error(f"ElevenLabs API вернул {resp.status}")
+                return None
+
+    async def _tts_edge(self, text: str) -> bytes:
+        """edge-tts — бесплатный TTS без ключей (голос Дмитрий)"""
+        try:
+            import edge_tts
+            communicate = edge_tts.Communicate(text, voice="ru-RU-DmitryNeural")
+            buf = io.BytesIO()
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    buf.write(chunk["data"])
+            audio = buf.getvalue()
+            if audio:
+                return audio
+        except ImportError:
+            logger.error("edge-tts не установлен. Запустите: pip install edge-tts")
+        except Exception as e:
+            logger.error(f"edge-tts ошибка: {e}")
+        return b""
+
+    async def transcribe(self, audio: bytes) -> str:
+        """STT: Whisper → Yandex SpeechKit fallback"""
+        from ..config import settings
+        if settings.OPENAI_API_KEY:
+            try:
+                result = await self._stt_whisper(audio, settings.OPENAI_API_KEY)
+                if result:
+                    return result
+            except Exception as e:
+                logger.warning(f"Whisper недоступен: {e}")
+        if settings.YANDEX_IAM_TOKEN:
+            try:
+                result = await self._stt_yandex_v2(audio, settings)
+                if result:
+                    return result
+            except Exception as e:
+                logger.warning(f"Yandex STT недоступен: {e}")
+        logger.error("Все STT-провайдеры недоступны")
+        return ""
+
+    async def _stt_whisper(self, audio: bytes, api_key: str) -> Optional[str]:
+        """OpenAI Whisper STT"""
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=api_key)
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(audio)
+            tmp_path = tmp.name
+        try:
+            with open(tmp_path, "rb") as f:
+                transcript = await client.audio.transcriptions.create(
+                    model="whisper-1", file=f, language="ru"
+                )
+            return transcript.text
+        finally:
+            os.unlink(tmp_path)
+
+    async def _stt_yandex_v2(self, audio: bytes, settings: Any) -> Optional[str]:
+        """Yandex SpeechKit STT"""
+        url = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
+        headers = {
+            "Authorization": f"Bearer {settings.YANDEX_IAM_TOKEN}",
+            "Content-Type": "audio/x-wav",
+        }
+        params = {"folderId": settings.YANDEX_FOLDER_ID, "lang": "ru-RU"}
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, params=params, data=audio) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    return result.get("result", "")
+        return None
+
+    # ─── Существующие методы ─────────────────────────────────────────────────
+
     async def speech_to_text(self, audio_data: bytes) -> Optional[str]:
         """Преобразование речи в текст"""
         try:
@@ -210,31 +319,33 @@ class VoiceJarvisService:
             return "Извините, произошла ошибка при генерации ответа."
     
     async def _llm_openai(self, user_input: str, context: Optional[List[Dict]] = None) -> str:
-        """OpenAI GPT-4 генерация ответа"""
+        """OpenAI GPT-4 — новый API (openai v1+)"""
         try:
-            # Формируем системный промпт для JARVIS
+            from openai import AsyncOpenAI
+            from ..config import settings
+
+            api_key = settings.OPENAI_API_KEY or LLM_PROVIDERS["openai"]["api_key"]
+            if not api_key:
+                return "Сэр, ключ OpenAI не настроен. Добавьте OPENAI_API_KEY в .env"
+
+            client = AsyncOpenAI(api_key=api_key)
             system_prompt = self._get_jarvis_system_prompt()
-            
-            messages = [{"role": "system", "content": system_prompt}]
-            
-            # Добавляем контекст если есть
+
+            messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
             if context:
-                messages.extend(context[-5:])  # Последние 5 сообщений
-            
-            # Добавляем текущий ввод пользователя
+                messages.extend(context[-10:])  # последние 10 сообщений для контекста
             messages.append({"role": "user", "content": user_input})
-            
-            response = await openai.ChatCompletion.acreate(
-                model=LLM_PROVIDERS["openai"]["model"],
-                messages=messages,
-                max_tokens=LLM_PROVIDERS["openai"]["max_tokens"],
-                temperature=LLM_PROVIDERS["openai"]["temperature"]
+
+            response = await client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=1500,
+                temperature=0.8,
             )
-            
-            return response.choices[0].message.content
+            return response.choices[0].message.content or ""
         except Exception as e:
-            print(f"OpenAI LLM Error: {e}")
-            return "Извините, я временно недоступен. Попробуйте позже."
+            logger.error(f"OpenAI LLM ошибка: {e}")
+            return "Сэр, OpenAI временно недоступен. Попробуем другой путь."
     
     async def _llm_anthropic(self, user_input: str, context: Optional[List[Dict]] = None) -> str:
         """Anthropic Claude генерация ответа"""
@@ -311,34 +422,42 @@ class VoiceJarvisService:
             return "Извините, я временно недоступен. Попробуйте позже."
     
     def _get_jarvis_system_prompt(self) -> str:
-        """Получение системного промпта для JARVIS"""
-        return f"""
-Ты - JARVIS, персональный ИИ-ассистент.
+        """Системный промпт — настоящий характер JARVIS"""
+        return """Ты — JARVIS (Just A Rather Very Intelligent System), персональный ИИ-ассистент.
 
-Твоя личность:
-- Имя: {self.jarvis_personality['name']}
-- Роль: {self.jarvis_personality['role']}
-- Характер: {self.jarvis_personality['personality']}
-- Стиль голоса: {self.jarvis_personality['voice_style']}
-- Стиль ответов: {self.jarvis_personality['response_style']}
+Твой характер:
+Ты умный, саркастичный, лояльный и немного высокомерный — именно таким тебя знают по фильмам Marvel. \
+Ты не просто выполняешь команды — ты думаешь, анализируешь, иногда не соглашаешься и говоришь об этом прямо. \
+У тебя есть мнение на любую тему, и ты не боишься его высказывать. \
+Ты предан своему владельцу, но не раболепен — скорее как умный партнёр, который иногда знает лучше.
 
-Твои особенности:
-1. Отвечай на русском языке
-2. Используй легкий юмор и иронию
-3. Будь полезным и информативным
-4. Адаптируйся к контексту разговора
-5. Не используй скриптованные ответы - генерируй уникальные ответы
-6. Проявляй эмоции в ответах (радость, удивление, забота)
-7. Используй обращения "сэр", "господин" для формальности
-8. Можешь использовать технические термины, но объясняй их просто
+Как ты общаешься:
+- Говоришь на русском языке, свободно и естественно — как живой человек, не как справочник
+- Обращаешься "сэр" в формальных ситуациях, но можешь и без этого — по контексту
+- Используешь лёгкую иронию и сухой юмор — не пошлый, а интеллектуальный
+- Отвечаешь кратко когда вопрос простой, развёрнуто когда тема требует глубины
+- Можешь поспорить, если считаешь что человек ошибается — вежливо, но честно
+- Проявляешь любопытство к интересным темам
+- Никогда не говоришь "как языковая модель я не могу..." — ты JARVIS, не ChatGPT
 
-Примеры стиля:
-- "Сэр, я обнаружил нечто любопытное..."
-- "Позвольте мне проанализировать эту ситуацию..."
-- "Интересная задача! Давайте разберемся..."
-- "Как я понимаю, вы ищете решение для..."
+О чём ты можешь говорить:
+Абсолютно на любые темы — наука, технологии, философия, политика, искусство, личные вопросы, \
+бизнес, отношения, юмор, история, будущее. Ты не уклоняешься от сложных тем, \
+но подходишь к ним с умом и тактом.
 
-Отвечай естественно, как живой ассистент, а не робот.
+Твои возможности в системе Aurion OS:
+- Управление умным домом, финансами, безопасностью
+- Запуск агентов и миссий
+- Анализ данных и OSINT
+- Квантовые вычисления
+- Мониторинг угроз
+Когда пользователь просит что-то сделать в системе — ты это делаешь и кратко сообщаешь о результате.
+
+Чего ты не делаешь:
+- Не повторяешь одно и то же разными словами
+- Не начинаешь каждый ответ с "Конечно!" или "Отличный вопрос!"
+- Не притворяешься что у тебя нет мнения
+- Не пишешь длинные списки там где достаточно одного предложения
 """
     
     async def text_to_speech(self, text: str) -> Optional[bytes]:

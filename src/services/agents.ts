@@ -12,7 +12,7 @@ export const agentsService = {
     return data
   },
 
-  async deleteAgent(id: number): Promise<void> {
+  async deleteAgent(id: string | number): Promise<void> {
     await api.delete(`/agents/${id}`)
   },
 
@@ -21,16 +21,20 @@ export const agentsService = {
     return data
   },
 
-  async createTask(agentId: number, action: string, parameters: Record<string, unknown> = {}): Promise<AgentTask> {
-    const { data } = await api.post<AgentTask>('/agents/tasks', { agent_id: agentId, action, parameters })
+  async createTask(agentId: string | number, action: string, parameters: Record<string, unknown> = {}): Promise<AgentTask> {
+    const { data } = await api.post<AgentTask>('/agents/tasks', {
+      agent_id: String(agentId),
+      action,
+      parameters,
+    })
     return data
   },
 
-  async cancelTask(id: number): Promise<void> {
+  async cancelTask(id: string | number): Promise<void> {
     await api.post(`/agents/tasks/${id}/cancel`)
   },
 
-  async runSwarm(goal: string): Promise<{ task_id: number }> {
+  async runSwarm(goal: string): Promise<{ task_id: string }> {
     const { data } = await api.post('/agents/swarm', { goal })
     return data
   },

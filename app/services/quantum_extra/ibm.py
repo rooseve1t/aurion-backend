@@ -1,43 +1,74 @@
-from __future__ import annotations
+"""
+IBM Quantum client for Aurion OS
+"""
+import logging
+from typing import Dict, Any, Optional
 
-import os
-from typing import Any, Dict
+try:
+    from qiskit import QuantumCircuit, transpile
+    from qiskit_ibm_provider import IBMProvider
+    QISKIT_IBM_AVAILABLE = True
+except ImportError:
+    QISKIT_IBM_AVAILABLE = False
+    QuantumCircuit = None
+    IBMProvider = None
 
-from .base import QuantumAdapterBase, iso_now
+logger = logging.getLogger(__name__)
 
+class IBMClient:
+    """Client for interacting with IBM Quantum services."""
 
-class IBMQuantumAdapter(QuantumAdapterBase):
-    """
-    Mocked IBM Quantum Open Plan adapter (REST stub).
+    def __init__(self, token: str):
+        if not QISKIT_IBM_AVAILABLE:
+            raise RuntimeError("qiskit-ibm-provider is not installed")
+        self.token = token
+        self.provider = None
 
-    We intentionally avoid pulling heavy qiskit dependency. When an IBM token is
-    supplied, we return a queued response structure; without a token we skip the
-    adapter.
-    """
+    def connect(self):
+        """Connect to IBM Quantum.
+        
+        Raises:
+            Exception: If connection fails.
+        """
+        try:
+            self.provider = IBMProvider(token=self.token)
+            logger.info("Successfully connected to IBM Quantum.")
+        except Exception as e:
+            logger.error(f"Failed to connect to IBM Quantum: {e}")
+            raise
 
-    backend = "ibm-quantum"
-    provider = "ibm"
+    def get_backend(self, backend_name: str = "ibmq_qasm_simulator"):
+        """Get a quantum backend.
 
-    def __init__(self) -> None:
-        self.token = os.getenv("IBM_QUANTUM_TOKEN", "").strip()
-        self.instance = os.getenv("IBM_QUANTUM_INSTANCE", "").strip() or "ibm-q/open/main"
-        self.api_url = os.getenv("IBM_QUANTUM_API_URL", "").strip() or "https://api.quantum-computing.ibm.com"
+        Args:
+            backend_name (str, optional): The name of the backend. Defaults to "ibmq_qasm_simulator".
 
-    def can_run(self) -> bool:
-        return bool(self.token)
+        Returns:
+            Any: The backend object.
+        """
+        if not self.provider:
+            self.connect()
+        
+        return self.provider.get_backend(backend_name)
 
-    def run(self, task_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        # Minimal mock; real call would sign request with self.token and submit circuit/QUBO.
+    def run_circuit(self, circuit, backend_name: str = "ibmq_qasm_simulator", shots: int = 1024) -> Dict[str, Any]:
+        """Run a quantum circuit on an IBM Quantum backend.
+
+        Args:
+            circuit: The quantum circuit to run.
+            backend_name (str, optional): The name of the backend. Defaults to "ibmq_qasm_simulator".
+            shots (int, optional): The number of shots. Defaults to 1024.
+
+        Returns:
+            Dict[str, Any]: The results of the job.
+        """
+        backend = self.get_backend(backend_name)
+        transpiled_circuit = transpile(circuit, backend)
+        job = backend.run(transpiled_circuit, shots=shots)
+        result = job.result()
+        counts = result.get_counts(transpiled_circuit)
+        
         return {
-            "backend": self.backend,
-            "provider": self.provider,
-            "status": "queued",
-            "task_type": task_type,
-            "instance": self.instance,
-            "result": {
-                "summary": "IBM Quantum mock submission accepted.",
-                "api_url": self.api_url,
-                "payload_echo": payload,
-            },
-            "timestamp": iso_now(),
+            "counts": counts,
+            "job_id": job.job_id()
         }

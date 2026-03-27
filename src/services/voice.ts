@@ -1,7 +1,23 @@
-import type { ChatMessage } from '@/types'
+import { api } from './api'
+import { browserVoice } from './browserVoice'
+import type { ChatMessage, VoicePersona, WsMessage } from '@/types'
 
 type WSHandler = (msg: ChatMessage) => void
 type StatusHandler = (s: 'connected' | 'disconnected' | 'error') => void
+
+interface VoicePreviewResponse {
+  text: string
+  emotion: string
+  voice_persona: VoicePersona
+  tts: {
+    provider: string
+    audio_b64?: string
+    mime_type?: string
+    emotion?: string
+    persona?: string
+    note?: string
+  }
+}
 
 function normalizeWsBase(rawBase?: string): string {
   const trimmed = rawBase?.trim().replace(/\/+$/, '')
@@ -22,6 +38,24 @@ class VoiceSocket {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private manualClose = false
   private audioPlayer: HTMLAudioElement | null = null
+
+  private playTts(tts: WsMessage['tts'] | VoicePreviewResponse['tts'] | undefined, text: string, persona: VoicePersona = 'calm'): void {
+    const ttsAudioB64 = tts?.audio_b64
+    const ttsMimeType = tts?.mime_type || 'audio/ogg'
+
+    if (ttsAudioB64) {
+      const src = `data:${ttsMimeType};base64,${ttsAudioB64}`
+      if (!this.audioPlayer) this.audioPlayer = new Audio()
+      this.audioPlayer.pause()
+      this.audioPlayer.src = src
+      this.audioPlayer.play().catch(() => {
+        browserVoice.speakFallback(text, persona)
+      })
+      return
+    }
+
+    browserVoice.speakFallback(text, persona)
+  }
 
   connect(onMessage: WSHandler, onStatus: StatusHandler): void {
     this.onMsg = onMessage
@@ -44,26 +78,20 @@ class VoiceSocket {
     this.ws.onerror = () => onStatus('error')
     this.ws.onmessage = (e) => {
       try {
-        const data = JSON.parse(e.data)
+        const data = JSON.parse(e.data) as WsMessage
         if (data.content) {
-          const ttsAudioB64 = data?.tts?.audio_b64 as string | undefined
-          const ttsMimeType = (data?.tts?.mime_type as string | undefined) || 'audio/wav'
-          if (ttsAudioB64) {
-            const src = `data:${ttsMimeType};base64,${ttsAudioB64}`
-            if (!this.audioPlayer) this.audioPlayer = new Audio()
-            this.audioPlayer.src = src
-            this.audioPlayer.play().catch(() => undefined)
-          }
+          const persona = data?.voice_persona || 'calm'
+          this.playTts(data?.tts, data.content, persona)
           onMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
             content: data.content,
             timestamp: new Date().toISOString(),
             emotion: data?.emotion,
-            voice_persona: data?.voice_persona,
-            tts_audio_b64: ttsAudioB64,
+            voice_persona: persona,
+            tts_audio_b64: data?.tts?.audio_b64,
             tts_provider: data?.tts?.provider,
-            tts_mime_type: ttsMimeType,
+            tts_mime_type: data?.tts?.mime_type || 'audio/ogg',
           })
         }
       } catch {/* ignore */ }
@@ -82,6 +110,12 @@ class VoiceSocket {
     this.ws?.close()
     this.ws = null
     this.audioPlayer = null
+  }
+
+  async preview(text: string, persona: VoicePersona): Promise<VoicePreviewResponse> {
+    const { data } = await api.post<VoicePreviewResponse>('/voice/preview', { text, persona })
+    this.playTts(data.tts, data.text, data.voice_persona)
+    return data
   }
 }
 

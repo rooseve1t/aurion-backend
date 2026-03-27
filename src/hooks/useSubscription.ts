@@ -7,6 +7,7 @@ export function useSubscription() {
   const user = useAuthStore((s) => s.user)
   const [subscription, setSubscription] = useState<(Subscription & { tariff?: Tariff; days_left?: number }) | null>(null)
   const [loading, setLoading] = useState(false)
+  const isPrivileged = user?.role === 'creator' || user?.role === 'admin'
 
   useEffect(() => {
     if (!user) return
@@ -18,11 +19,12 @@ export function useSubscription() {
   }, [user])
 
   const hasFeature = (feature: string): boolean => {
+    if (isPrivileged) return true
     if (!subscription?.tariff?.features) return false
     return !!subscription.tariff.features[feature]
   }
 
-  const tier = subscription?.tariff?.name?.toLowerCase() || 'free'
+  const tier = isPrivileged ? 'pro' : subscription?.tariff?.name?.toLowerCase() || 'free'
 
   return { subscription, loading, hasFeature, tier }
 }
