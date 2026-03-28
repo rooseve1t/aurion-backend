@@ -192,6 +192,14 @@ app.include_router(webhooks_router, prefix="/api/v1/webhooks", tags=["webhooks"]
 from .api.dashboard import router as dashboard_router
 app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["dashboard"])
 
+# System stats
+from .api.system import router as system_router
+app.include_router(system_router, prefix="/api/v1/system", tags=["system"])
+
+# Profile preferences
+from .api.profile import router as profile_router
+app.include_router(profile_router, prefix="/api/v1/profile", tags=["profile"])
+
 
 # Health check
 @app.get("/health")
