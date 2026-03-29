@@ -13,6 +13,12 @@ from datetime import datetime, timezone, time as dt_time
 import aiohttp
 from fastapi import Depends
 
+# 🏆 ЗОЛОТОЙ СТАНДАРТ: Импортируем openai с graceful fallback
+try:
+    import openai
+except ImportError:
+    openai = None  # type: ignore
+
 # 🏆 ЗОЛОТОЙ СТАНДАРТ: Конфигурация провайдеров
 TTS_PROVIDERS = {
     "elevenlabs": {
@@ -119,7 +125,7 @@ class VoiceJarvisStandalone:
         self.night_hours_end = 6     # 06:00
         
         # 🏆 ЗОЛОТОЙ СТАНДАРТ: Настройка OpenAI
-        if LLM_PROVIDERS["openai"]["api_key"]:
+        if openai and LLM_PROVIDERS["openai"]["api_key"]:
             openai.api_key = LLM_PROVIDERS["openai"]["api_key"]
         
         # 🏆 ЗОЛОТОЙ СТАНДАРТ: Улучшенная персона JARVIS
@@ -241,6 +247,9 @@ class VoiceJarvisStandalone:
     
     async def _stt_openai(self, audio_data: bytes) -> Optional[str]:
         """🏆 ЗОЛОТОЙ СТАНДАРТ: OpenAI Whisper распознавание"""
+        if not openai:
+            print("OpenAI not available")
+            return None
         try:
             # Сохраняем аудио во временный файл
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
@@ -324,6 +333,8 @@ class VoiceJarvisStandalone:
     
     async def _llm_openai(self, user_input: str, context: Optional[List[Dict]] = None) -> str:
         """🏆 ЗОЛОТОЙ СТАНДАРТ: OpenAI GPT-4 генерация ответа"""
+        if not openai:
+            return "Извините, OpenAI недоступен."
         try:
             # Формируем системный промпт для JARVIS
             system_prompt = self._get_jarvis_system_prompt()
