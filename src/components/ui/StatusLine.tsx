@@ -1,7 +1,7 @@
 import React from 'react'
 import { LucideIcon } from 'lucide-react'
 
-interface StatusLineProps {
+export interface StatusLineProps {
   label: string
   status: 'online' | 'offline' | 'warning'
   icon?: LucideIcon

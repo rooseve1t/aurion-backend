@@ -72,7 +72,7 @@ export function HomePage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Home size={20} color="var(--cyan)" />
+          <Home size={20} color="var(--amber)" />
           <span className={styles.title}>УМНЫЙ ДОМ</span>
           <span className={styles.badge}>{online}/{devices.length} онлайн</span>
         </div>

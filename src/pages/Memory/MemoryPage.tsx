@@ -61,7 +61,7 @@ export function MemoryPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.titleRow}>
-          <Brain size={20} color="var(--cyan)" />
+          <Brain size={20} color="var(--amber)" />
           <span className={styles.title}>ВЕКТОРНАЯ ПАМЯТЬ</span>
           <span className={styles.count}>{count} записей</span>
         </div>
@@ -102,7 +102,7 @@ export function MemoryPage() {
               <label className="label" style={{ margin: 0 }}>ВАЖНОСТЬ:</label>
               <input type="range" min={1} max={10} value={importance}
                 onChange={(e) => setImportance(+e.target.value)} className={styles.range} />
-              <span style={{ color: 'var(--cyan)', minWidth: 16 }}>{importance}</span>
+              <span style={{ color: 'var(--amber)', minWidth: 16 }}>{importance}</span>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn btn-ghost" onClick={() => setAdding(false)}>ОТМЕНА</button>

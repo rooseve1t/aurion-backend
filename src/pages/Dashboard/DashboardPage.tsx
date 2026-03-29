@@ -6,6 +6,8 @@ import { useSystemStore } from '@/store/systemStore'
 import { useChatStore } from '@/store/chatStore'
 import { StatBar } from '@/components/StatBar/StatBar'
 import { CoreOrb } from '@/components/CoreOrb/CoreOrb'
+import { HUDModule } from '@/components/HUDModule'
+import { MetricWidget } from '@/components/MetricWidget'
 import { useToast } from '@/hooks/useToast'
 import { browserVoice, type VoiceState } from '@/services/browserVoice'
 import { formatDate } from '@/utils'
@@ -53,19 +55,18 @@ export function DashboardPage() {
   const moduleReadiness = Math.min(100, Math.round((((stats?.devices_online || 0) > 0 ? 2 : 1) + ((stats?.memory_entries || 0) > 0 ? 2 : 1) + ((stats?.active_tasks || 0) >= 0 ? 2 : 1) + (stats?.quantum_status === 'online' ? 2 : 1)) / 8 * 100))
   
   const quickAccess = [
-    { label: 'Голос', icon: Mic, tone: 'cyan', path: '/resonance' },
-    { label: 'Vault', icon: Lock, tone: 'purple', path: '/vault' },
-    { label: 'SQUAD', icon: Users, tone: 'pink', action: () => setShowSquadDashboard(true) },
-    { label: 'Память', icon: Brain, tone: 'green' },
-    { label: 'OSINT', icon: Radar, tone: 'amber' },
-    { label: 'Финансы', icon: Activity, tone: 'cyan' },
-    { label: 'Дом', icon: Zap, tone: 'amber' },
-    { label: 'Агенты', icon: Sparkles, tone: 'purple' },
-    { label: 'Квант', icon: Activity, tone: 'green' },
+    { label: 'Голос', icon: Mic, tone: 'amber', path: '/resonance' },
+    { label: 'Миссии', icon: Sparkles, tone: 'amber', path: '/autonomy' },
+    { label: 'Метрики', icon: Activity, tone: 'amber', path: '/dashboard' },
+    { label: 'Автономность', icon: Cpu, tone: 'amber', path: '/autonomy' },
+    { label: 'Задача', icon: Terminal, tone: 'amber', action: () => setShowPersonalityMatrix(true) },
+    { label: 'Скан', icon: Radar, tone: 'amber', path: '/guardian' },
+    { label: 'Память', icon: Brain, tone: 'amber', path: '/memory' },
+    { label: 'Профиль', icon: Users, tone: 'amber', path: '/profile' },
   ]
   
   const currentPersona = [...messages].reverse().find((message) => message.voice_persona)?.voice_persona || 'jarvis'
-  const voiceStatusLabel = voiceState === 'listening' ? 'Слушаю...' : voiceState === 'processing' ? 'Думаю...' : 'Жду команду'
+  const voiceStatusLabel = voiceState === 'listening' ? 'Слушаю...' : voiceState === 'processing' ? 'Анализирую...' : 'Ожидаю команду'
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2000)
@@ -105,29 +106,29 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-cyan-400 font-mono p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-amber-300 font-mono p-8">
         <LoadingIcon size={64} type="pulse" />
         <div className="text-xl tracking-widest uppercase animate-pulse mt-6">Аутентификация систем...</div>
         <div className="mt-4 w-64 h-1 bg-slate-900 rounded-full overflow-hidden">
-          <div className="h-full bg-cyan-500 animate-[loading_2s_ease-in-out_infinite]" style={{ width: '40%' }}></div>
+          <div className="h-full bg-amber-400 animate-[loading_2s_ease-in-out_infinite]" style={{ width: '40%' }}></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="cyber-dashboard selection:bg-cyan-500/30">
+    <div className="cyber-dashboard selection:bg-amber-400/30">
       <DigitalRain />
       <div className="scanline-effect"></div>
       
       {/* Header */}
       <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/40 backdrop-blur-xl z-50 rounded-b-2xl">
         <div className="flex items-center gap-4">
-          <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 shadow-[0_0_15px_rgba(0,243,255,0.2)]">
+          <div className="p-2 rounded-lg bg-amber-400/10 text-amber-300 shadow-[0_0_15px_rgba(255,179,71,0.25)]">
             <Radar size={20} className="animate-spin-slow" />
           </div>
           <div>
-            <h1 className="text-sm font-display tracking-widest uppercase text-white neon-text">Aurion_OS <span className="text-cyan-500">v1.3</span></h1>
+            <h1 className="text-sm font-display tracking-[0.4em] uppercase text-white neon-text">AURION<span className="text-amber-400">_OS</span></h1>
             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500">
               <span className="flex items-center gap-1"><Wifi size={8} className="text-green-500" /> ONLINE</span>
               <span>•</span>
@@ -148,42 +149,26 @@ export function DashboardPage() {
 
       <main className="flex-1 flex overflow-hidden p-4 gap-6">
         {/* Left Sidebar: Intelligence & Stats */}
-        <aside className="hidden lg:flex flex-col w-80 gap-6 overflow-y-auto">
-          <InteractiveCard className="p-5 quantum-glass">
-            <div className="flex justify-between items-start mb-6">
+        <aside className="hidden lg:flex flex-col w-80 gap-6 overflow-y-auto custom-scrollbar">
+          <HUDModule title="System Core" subtitle="Readiness Matrix" icon={Radar}>
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Cognitive_Core</h3>
-                <div className="text-xl font-display text-white mt-1 tracking-tighter neon-text">READY</div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500">Module Readiness</div>
+                <div className="text-2xl font-display text-white mt-1 tracking-[0.2em]">{moduleReadiness}%</div>
               </div>
-              <ActivityIndicator color="var(--quantum-cyan)" />
+              <ActivityIndicator color="var(--amber)" />
             </div>
-            
-            <div className="space-y-4">
-              <div className="p-3 rounded bg-black/40 border border-white/5">
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-2 uppercase">
-                  <span>Module_Readiness</span>
-                  <span>{moduleReadiness}%</span>
-                </div>
-                <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(0,243,255,0.8)] transition-all duration-1000" style={{ width: `${moduleReadiness}%` }}></div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded bg-black/20 border border-white/5 flex flex-col gap-1">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase">Memory</span>
-                  <span className="text-xs font-display text-white">{stats?.memory_entries || 0} nodes</span>
-                </div>
-                <div className="p-2 rounded bg-black/20 border border-white/5 flex flex-col gap-1">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase">Tasks</span>
-                  <span className="text-xs font-display text-white">{stats?.active_tasks || 0} active</span>
-                </div>
-              </div>
+            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mb-4">
+              <div className="h-full bg-amber-400 shadow-[0_0_10px_rgba(255,179,71,0.7)] transition-all duration-1000" style={{ width: `${moduleReadiness}%` }}></div>
             </div>
-          </InteractiveCard>
+            <div className="grid grid-cols-2 gap-2">
+              <MetricWidget label="MEMORY" value={stats?.memory_entries || 0} subValue="nodes" />
+              <MetricWidget label="TASKS" value={stats?.active_tasks || 0} subValue="active" />
+            </div>
+          </HUDModule>
 
           <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest px-1">Quick_Access</h4>
+            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest px-1">Quick_Actions</h4>
             <div className="grid grid-cols-2 gap-2">
               {quickAccess.map((item, i) => (
                 <InteractiveButton 
@@ -208,18 +193,18 @@ export function DashboardPage() {
         <section className="flex-1 flex flex-col gap-6 relative z-10">
           <div className="flex-1 quantum-glass flex flex-col overflow-hidden relative group">
             {/* Holographic Background Effect */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,243,255,0.05),transparent_70%)] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,179,71,0.08),transparent_70%)] pointer-events-none"></div>
             
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
                   <div className="relative mb-8">
-                    <div className="absolute inset-0 animate-ping bg-cyan-500/20 rounded-full"></div>
+                    <div className="absolute inset-0 animate-ping bg-amber-400/20 rounded-full"></div>
                     <CoreOrb size={120} active={true} />
                   </div>
-                  <h3 className="text-lg font-display text-white mb-2 neon-text">Ожидание инициализации</h3>
-                  <p className="text-sm max-w-xs text-slate-400">Все системы онлайн. Я готов помочь вам в управлении вашими цифровыми активами и реальностью.</p>
+                  <h3 className="text-lg font-display text-white mb-2">Система ожидает команды</h3>
+                  <p className="text-sm max-w-xs text-slate-400">Все контуры синхронизированы. Я готов сопровождать ваш поток работы.</p>
                 </div>
               ) : (
                 messages.map((msg, i) => (
@@ -234,8 +219,8 @@ export function DashboardPage() {
                       <div className={`
                         p-4 rounded-2xl text-sm leading-relaxed
                         ${msg.role === 'user' 
-                          ? 'bg-cyan-500 text-slate-950 font-medium rounded-tr-none' 
-                          : 'bg-black/60 text-slate-100 border border-cyan-500/20 rounded-tl-none backdrop-blur-md shadow-[0_0_15px_rgba(0,243,255,0.1)]'
+                          ? 'bg-amber-400 text-slate-950 font-medium rounded-tr-none' 
+                          : 'bg-black/60 text-slate-100 border border-amber-400/20 rounded-tl-none backdrop-blur-md shadow-[0_0_15px_rgba(255,179,71,0.14)]'
                         }
                       `}>
                         {msg.content}
@@ -246,8 +231,8 @@ export function DashboardPage() {
               )}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-black/40 p-3 rounded-2xl rounded-tl-none border border-cyan-500/20">
-                    <LoadingIcon size={16} type="spinner" color="var(--quantum-cyan)" />
+                  <div className="bg-black/40 p-3 rounded-2xl rounded-tl-none border border-amber-400/20">
+                    <LoadingIcon size={16} type="spinner" color="var(--amber)" />
                   </div>
                 </div>
               )}
@@ -261,7 +246,7 @@ export function DashboardPage() {
                   onClick={handleVoiceToggle}
                   variant={voiceState === 'listening' ? 'danger' : 'secondary'}
                   size="sm"
-                  className={`rounded-xl h-12 w-12 border-white/10 ${voiceState === 'listening' ? 'animate-pulse bg-red-500/20 text-red-400 border-red-500/30' : 'quantum-glass text-cyan-400'}`}
+                  className={`rounded-xl h-12 w-12 border-white/10 ${voiceState === 'listening' ? 'animate-pulse bg-red-500/20 text-red-400 border-red-500/30' : 'quantum-glass text-amber-300'}`}
                 >
                   {voiceState === 'listening' ? <MicOff size={20} /> : <Mic size={20} />}
                 </InteractiveButton>
@@ -273,12 +258,12 @@ export function DashboardPage() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     placeholder={voiceState === 'listening' ? 'Слушаю вас...' : "Введите команду или спросите что-то..."}
-                    className="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 pr-12 text-sm focus:outline-none focus:border-cyan-500/50 transition-colors text-white placeholder:text-slate-600 font-sans"
+                    className="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 pr-12 text-sm focus:outline-none focus:border-amber-400/60 transition-colors text-white placeholder:text-slate-600 font-sans"
                   />
                   <InteractiveButton 
                     onClick={handleSend}
                     disabled={!input.trim()}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-cyan-500 disabled:text-slate-700 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-amber-300 disabled:text-slate-700 transition-colors"
                   >
                     <Send size={18} />
                   </InteractiveButton>
@@ -287,7 +272,7 @@ export function DashboardPage() {
                   <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">{voiceStatusLabel}</span>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4].map(i => (
-                      <div key={i} className={`w-1 h-1 rounded-full ${voiceState === 'listening' ? 'bg-cyan-500 animate-pulse' : 'bg-slate-800'}`}></div>
+                      <div key={i} className={`w-1 h-1 rounded-full ${voiceState === 'listening' ? 'bg-amber-400 animate-pulse' : 'bg-slate-800'}`}></div>
                     ))}
                   </div>
                 </div>
@@ -303,7 +288,7 @@ export function DashboardPage() {
             {proactivity.map((item) => (
               <div key={item.id} className="proactivity-item quantum-glass">
                 <div className="flex items-center gap-2 mb-2">
-                  {item.type === 'security' ? <Shield size={12} className="text-purple-400" /> : <Sparkles size={12} className="text-cyan-400" />}
+                  {item.type === 'security' ? <Shield size={12} className="text-amber-300" /> : <Sparkles size={12} className="text-amber-300" />}
                   <span className="text-[8px] font-mono text-slate-500 uppercase">{item.type}</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-slate-200">{item.content}</p>
@@ -319,7 +304,7 @@ export function DashboardPage() {
                <h3 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Active_Persona</h3>
                <button 
                  onClick={() => setShowPersonalityMatrix(true)}
-                 className="p-1 hover:text-cyan-400 transition-colors"
+                 className="p-1 hover:text-amber-300 transition-colors"
                  title="Modify Personality Matrix"
                >
                  <Settings size={12} />
@@ -338,8 +323,8 @@ export function DashboardPage() {
              </div>
              <div className="text-[10px] font-mono space-y-1.5 text-slate-400 overflow-hidden">
                <p className="text-green-500/80">{" >> "} Quantum Mesh online...</p>
-               <p>{" >> "} Encrypting data streams... <span className="text-cyan-500">OK</span></p>
-               <p>{" >> "} Proactivity Manager... <span className="text-cyan-500">ACTIVE</span></p>
+               <p>{" >> "} Encrypting data streams... <span className="text-amber-300">OK</span></p>
+               <p>{" >> "} Proactivity Manager... <span className="text-amber-300">ACTIVE</span></p>
                <p className="animate-pulse">{" >> "} Waiting for neural sync_</p>
              </div>
           </InteractiveCard>

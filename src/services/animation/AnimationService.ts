@@ -458,7 +458,7 @@ export class AnimationService extends EventEmitter implements IAnimationEngine {
       this.frameRequestId = requestAnimationFrame(monitorPerformance)
     }
     
-    let lastFrameTime = performance.now()
+    const lastFrameTime = performance.now()
     this.lastFrameTime = lastFrameTime
     
     monitorPerformance()

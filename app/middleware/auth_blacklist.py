@@ -2,6 +2,7 @@
 Middleware для проверки JWT blacklist (отозванных токенов)
 """
 import logging
+import time
 from typing import Optional
 import redis.asyncio as redis
 from jose import JWTError, jwt
@@ -11,6 +12,9 @@ logger = logging.getLogger("aurion-blacklist")
 
 _redis_client: Optional[redis.Redis] = None
 
+# In-memory fallback blacklist when Redis is unavailable: {jti: expiry_timestamp}
+_memory_blacklist: dict[str, float] = {}
+
 
 def set_redis_client(client: redis.Redis) -> None:
     global _redis_client
@@ -19,24 +23,32 @@ def set_redis_client(client: redis.Redis) -> None:
 
 async def add_to_blacklist(jti: str, ttl_seconds: int) -> None:
     """Добавить jti токена в blacklist"""
-    if not _redis_client:
-        return
-    try:
-        await _redis_client.setex(f"blacklist:{jti}", ttl_seconds, "1")
-    except Exception as e:
-        logger.error(f"Failed to add token to blacklist: {e}")
+    if _redis_client:
+        try:
+            await _redis_client.setex(f"blacklist:{jti}", ttl_seconds, "1")
+            return
+        except Exception as e:
+            logger.error(f"Failed to add token to blacklist in Redis: {e}")
+    # Fallback: in-memory
+    _memory_blacklist[jti] = time.time() + ttl_seconds
 
 
 async def is_blacklisted(jti: str) -> bool:
     """Проверить, отозван ли токен"""
-    if not _redis_client:
+    if _redis_client:
+        try:
+            result = await _redis_client.get(f"blacklist:{jti}")
+            return result is not None
+        except Exception as e:
+            logger.error(f"Failed to check blacklist in Redis: {e}")
+    # Fallback: in-memory
+    expiry = _memory_blacklist.get(jti)
+    if expiry is None:
         return False
-    try:
-        result = await _redis_client.get(f"blacklist:{jti}")
-        return result is not None
-    except Exception as e:
-        logger.error(f"Failed to check blacklist: {e}")
+    if time.time() > expiry:
+        del _memory_blacklist[jti]
         return False
+    return True
 
 
 def _resolve_jwt_secret() -> str:

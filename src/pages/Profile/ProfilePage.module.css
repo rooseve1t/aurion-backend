@@ -64,7 +64,7 @@
 .secretCode {
   font-family: var(--font);
   font-size: 12px;
-  color: var(--cyan);
+  color: var(--amber);
   background: rgba(6, 10, 22, 0.62);
   border: 1px solid var(--border);
   border-radius: 4px;

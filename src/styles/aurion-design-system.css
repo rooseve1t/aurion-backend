@@ -13,9 +13,9 @@
   --aurion-bg-surface-high: #dee2e6;
   
   /* Accent Colors - slightly muted for light theme */
-  --aurion-cyan: #00b8b8;
-  --aurion-cyan-dim: #00a0a0;
-  --aurion-cyan-fixed: #00b8b8;
+  --aurion-cyan: #ffb347;
+  --aurion-cyan-dim: #ffca78;
+  --aurion-cyan-fixed: #ffb347;
   --aurion-purple: #9c88ff;
   --aurion-purple-dim: #8b7dff;
   --aurion-green: #00d68f;
@@ -30,7 +30,7 @@
   --aurion-text-dim: #adb5bd;
   
   /* Shadows - lighter for light theme */
-  --aurion-shadow-neon-cyan: 0 0 20px rgba(0, 184, 184, 0.15);
+  --aurion-shadow-neon-cyan: 0 0 20px rgba(255, 179, 71, 0.2);
   --aurion-shadow-neon-purple: 0 0 20px rgba(156, 136, 255, 0.15);
   --aurion-shadow-orb: 0 0 15px rgba(0, 184, 184, 0.3);
   --aurion-shadow-glass: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -46,9 +46,9 @@
   --aurion-bg-surface-high: #2a2a2a;
   
   /* Accent Colors */
-  --aurion-cyan: #00fbfb;
-  --aurion-cyan-dim: #00dddd;
-  --aurion-cyan-fixed: #00fbfb;
+  --aurion-cyan: #ffb347;
+  --aurion-cyan-dim: #ffd38a;
+  --aurion-cyan-fixed: #ffb347;
   --aurion-purple: #d0bcff;
   --aurion-purple-dim: #d0bcff;
   --aurion-green: #4edea3;
@@ -63,9 +63,9 @@
   --aurion-text-dim: #839493;
   
   /* Shadows */
-  --aurion-shadow-neon-cyan: 0 0 40px rgba(0, 251, 251, 0.08);
+  --aurion-shadow-neon-cyan: 0 0 40px rgba(255, 179, 71, 0.16);
   --aurion-shadow-neon-purple: 0 0 40px rgba(208, 188, 255, 0.08);
-  --aurion-shadow-orb: 0 0 20px rgba(0, 251, 251, 0.4);
+  --aurion-shadow-orb: 0 0 20px rgba(255, 179, 71, 0.36);
   --aurion-shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
   
   /* Typography */
@@ -89,9 +89,9 @@
   --aurion-radius-full: 9999px;
   
   /* Shadows */
-  --aurion-shadow-neon-cyan: 0 0 40px rgba(0, 251, 251, 0.08);
+  --aurion-shadow-neon-cyan: 0 0 40px rgba(255, 179, 71, 0.16);
   --aurion-shadow-neon-purple: 0 0 40px rgba(208, 188, 255, 0.08);
-  --aurion-shadow-orb: 0 0 20px rgba(0, 251, 251, 0.4);
+  --aurion-shadow-orb: 0 0 20px rgba(255, 179, 71, 0.36);
   --aurion-shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
   
   /* Transitions */

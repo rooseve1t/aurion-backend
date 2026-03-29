@@ -29,7 +29,7 @@ from ..auth import (
     SECRET_KEY
 )
 from ..models.user import User
-from ..middleware.auth_blacklist import add_to_blacklist
+from ..middleware.auth_blacklist import add_to_blacklist, is_blacklisted
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timezone
 from jose import jwt as jose_jwt
@@ -88,6 +88,21 @@ async def get_current_user(
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Проверка blacklist (отозванные токены после logout)
+    try:
+        payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        jti = payload.get("jti") or payload.get("sub", "")
+        if jti and await is_blacklisted(jti):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        pass
     
     user = await get_user_by_id(db, token_data.user_id)
     if not user:

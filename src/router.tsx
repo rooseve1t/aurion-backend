@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { BootPage }      from '@/pages/Boot/BootPage'
+import { LandingPage }   from '@/pages/Landing/LandingPage'
 import { AuthPage }      from '@/pages/Auth/AuthPage'
 import { DashboardPage } from '@/pages/Dashboard/DashboardPage'
 import { MemoryPage }    from '@/pages/Memory/MemoryPage'
@@ -26,7 +27,7 @@ const wrap = (element: React.ReactElement, name: string) => (
 )
 
 export const router = createBrowserRouter([
-  { path: '/',             element: <Navigate to="/boot" replace /> },
+  { path: '/',             element: <LandingPage /> },
   { path: '/boot',         element: <BootPage /> },
   { path: '/auth/login',   element: <AuthPage /> },
   { path: '/auth/register',element: <AuthPage /> },

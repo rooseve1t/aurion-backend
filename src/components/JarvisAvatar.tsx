@@ -28,7 +28,7 @@ export const JarvisAvatar: React.FC<JarvisAvatarProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animFrameRef = useRef<number>(0)
   const analyserRef = useRef<AnalyserNode | null>(null)
-  const dataRef = useRef<Uint8Array>(new Uint8Array(64))
+  const dataRef = useRef<Uint8Array<ArrayBuffer>>(new Uint8Array(64) as Uint8Array<ArrayBuffer>)
   const phaseRef = useRef(0)
 
   // Подключаем Web Audio API к аудиоэлементу
@@ -42,7 +42,7 @@ export const JarvisAvatar: React.FC<JarvisAvatarProps> = ({
       source.connect(analyser)
       analyser.connect(ctx.destination)
       analyserRef.current = analyser
-      dataRef.current = new Uint8Array(analyser.frequencyBinCount)
+      dataRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
     } catch {
       // Браузер не поддерживает или уже подключён
     }

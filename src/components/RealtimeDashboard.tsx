@@ -110,27 +110,48 @@ const ThreatBadge: React.FC<{ level: ThreatItem['level'] }> = ({ level }) => {
 export const RealtimeDashboard: React.FC = () => {
   const [data, setData] = useState<DashboardState>(INITIAL)
 
-  const handleWsMessage = useCallback((msg: { type?: string; payload?: unknown }) => {
-    const payload = msg.payload as Record<string, unknown> | undefined
-    if (!payload) return
+  const handleWsMessage = useCallback((rawMsg: unknown) => {
+    const msg = rawMsg as Record<string, unknown>
+    const type = msg.type as string | undefined
+    if (!type) return
+
+    // payload может быть как msg.payload, так и сам msg (разные форматы бэкенда)
+    const payload = (msg.payload ?? msg) as Record<string, unknown>
 
     setData((prev) => {
       const next = { ...prev, lastUpdate: new Date().toLocaleTimeString('ru-RU') }
 
-      switch (msg.type) {
-        case 'system_status':
-          next.system = payload as SystemStatus
+      switch (type) {
+        case 'system_status': {
+          if (typeof payload === 'object' && payload !== null) {
+            next.system = payload as unknown as SystemStatus
+          }
           break
-        case 'agent_status':
-          next.agents = Array.isArray(payload) ? (payload as AgentStatus[]) : prev.agents
+        }
+        case 'agent_status': {
+          // payload может быть массивом или объектом с полем agents
+          if (Array.isArray(payload)) {
+            next.agents = payload as AgentStatus[]
+          } else if (Array.isArray((payload as Record<string, unknown>).agents)) {
+            next.agents = (payload as { agents: AgentStatus[] }).agents
+          }
           break
-        case 'threat_alert':
-          next.threats = [payload as ThreatItem, ...prev.threats].slice(0, 5)
+        }
+        case 'threat_alert': {
+          if (typeof payload === 'object' && payload !== null && !Array.isArray(payload)) {
+            next.threats = [payload as unknown as ThreatItem, ...prev.threats].slice(0, 5)
+          }
           break
-        case 'quote_update':
-          next.quotes = Array.isArray(payload) ? (payload as QuoteItem[]) : prev.quotes
+        }
+        case 'quote_update': {
+          if (Array.isArray(payload)) {
+            next.quotes = payload as QuoteItem[]
+          } else if (Array.isArray((payload as Record<string, unknown>).quotes)) {
+            next.quotes = (payload as { quotes: QuoteItem[] }).quotes
+          }
           break
-        case 'health':
+        }
+        case 'health': {
           if (typeof payload === 'object' && payload !== null) {
             const services = (payload as { services?: Record<string, string> }).services || {}
             next.system = {
@@ -140,13 +161,14 @@ export const RealtimeDashboard: React.FC = () => {
             }
           }
           break
+        }
       }
       return next
     })
   }, [])
 
   useEffect(() => {
-    const unsub = wsService.onMessage(handleWsMessage as Parameters<typeof wsService.onMessage>[0])
+    const unsub = wsService.onMessage(handleWsMessage as unknown as Parameters<typeof wsService.onMessage>[0])
     return unsub
   }, [handleWsMessage])
 
@@ -214,7 +236,7 @@ export const RealtimeDashboard: React.FC = () => {
       {/* ─── Агенты ─────────────────────────────────────────────────────── */}
       <div style={panelStyle}>
         <div style={titleStyle}>Агенты</div>
-        {data.agents.length === 0 ? (
+        {!Array.isArray(data.agents) || data.agents.length === 0 ? (
           <div style={{ fontSize: '0.75rem', color: 'var(--hud-text-muted)' }}>
             Нет активных агентов
           </div>
@@ -238,7 +260,7 @@ export const RealtimeDashboard: React.FC = () => {
       {/* ─── Радар угроз ────────────────────────────────────────────────── */}
       <div style={panelStyle}>
         <div style={titleStyle}>Угрозы</div>
-        {data.threats.length === 0 ? (
+        {!Array.isArray(data.threats) || data.threats.length === 0 ? (
           <div style={{ fontSize: '0.75rem', color: 'var(--hud-accent-green)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <StatusDot status="online" />
             Угроз не обнаружено
@@ -259,7 +281,7 @@ export const RealtimeDashboard: React.FC = () => {
       {/* ─── Финансовый тикер ───────────────────────────────────────────── */}
       <div style={panelStyle}>
         <div style={titleStyle}>Котировки</div>
-        {data.quotes.length === 0 ? (
+        {!Array.isArray(data.quotes) || data.quotes.length === 0 ? (
           <div style={{ fontSize: '0.75rem', color: 'var(--hud-text-muted)' }}>
             Нет данных
           </div>

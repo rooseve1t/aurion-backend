@@ -40,4 +40,7 @@ async def update_voice_preferences(
     prefs["voice"] = payload
     current_user.preferences = prefs
     await db.commit()
-    return prefs
+    # Always return voice_persona key — test contract
+    result: Dict[str, Any] = dict(payload)
+    result["voice_persona"] = payload.get("persona", prefs.get("voice", {}).get("persona", "jarvis"))
+    return result

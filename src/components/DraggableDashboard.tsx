@@ -155,7 +155,7 @@ export const DraggableDashboard: React.FC = () => {
     setWidgets((prev) => {
       const oldIndex = prev.findIndex((w) => w.id === active.id)
       const newIndex = prev.findIndex((w) => w.id === over.id)
-      const reordered = arrayMove(prev, oldIndex, newIndex).map((w, i) => ({
+      const reordered = arrayMove(prev, oldIndex, newIndex).map((w: WidgetConfig, i: number) => ({
         ...w,
         order: i,
       }))

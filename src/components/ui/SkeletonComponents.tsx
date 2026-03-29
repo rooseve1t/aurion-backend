@@ -423,15 +423,4 @@ export function PulseSkeleton({ children, isLoading }: { children: React.ReactNo
   )
 }
 
-// Экспорт всех компонентов
-export {
-  Skeleton,
-  SkeletonCard,
-  SkeletonMessage,
-  SkeletonDashboard,
-  SkeletonTable,
-  SkeletonSettings,
-  SkeletonProfile,
-  SkeletonLoader,
-  PulseSkeleton
-}
+

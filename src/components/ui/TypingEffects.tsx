@@ -573,13 +573,3 @@ export function SparkleTyping({ text, speed = 80, className = '' }: SparkleTypin
   )
 }
 
-// Экспорт всех компонентов
-export {
-  TypingText,
-  TypingLoop,
-  TypingIndicator,
-  TypingMessage,
-  TypingChat,
-  MatrixTyping,
-  SparkleTyping
-}

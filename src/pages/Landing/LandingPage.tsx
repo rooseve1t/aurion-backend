@@ -1,86 +1,135 @@
-import React from 'react';
+import { Link } from 'react-router-dom'
+import { CoreOrb } from '@/components/CoreOrb/CoreOrb'
+import styles from './LandingPage.module.css'
 
-/**
- * 🌐 Aurion Marketing Website (Landing Page)
- * Design DNA for public-facing acquisition.
- */
-export const LandingPage: React.FC = () => {
+export function LandingPage() {
   return (
-    <div className="bg-[#020617] text-white font-body selection:bg-cyan-500/30 overflow-x-hidden">
-      
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center p-6">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 aurion-grid-bg opacity-10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 blur-[150px] rounded-full animate-pulse" />
-        
-        <div className="relative z-10 text-center max-w-4xl mx-auto">
-          <div className="inline-block px-4 py-1 glass rounded-full border border-cyan-500/30 text-[10px] font-mono text-cyan-400 uppercase tracking-[0.3em] mb-8 animate-bounce">
-            Stage_23_Strategic_Intelligence
-          </div>
-          <h1 className="text-6xl md:text-8xl font-display font-black tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-slate-500">
-            AURION <span className="text-cyan-400">OS</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-slate-400 font-light tracking-wide mb-12 max-w-2xl mx-auto leading-relaxed">
-            Beyond a personal assistant. A distributed <span className="text-white italic">Quantum-ready</span> neural network for the modern pioneer.
-          </p>
-          
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-            <button className="group relative px-12 py-4 bg-cyan-500 text-[#020617] font-display font-bold tracking-[0.2em] uppercase rounded-lg overflow-hidden transition-all hover:scale-105 active:scale-95">
-              <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
-              Initialize_Core
-            </button>
-            <button className="px-12 py-4 glass border border-white/10 text-white font-display font-bold tracking-[0.2em] uppercase rounded-lg hover:bg-white/5 transition-all">
-              Read_Documentation
-            </button>
-          </div>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.brandMark}>AURION</span>
+          <span className={styles.brandSub}>QUANTUM AI OS</span>
         </div>
-
-        {/* Floating Core Hint */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
-          <div className="w-6 h-10 border-2 border-white/20 rounded-full flex justify-center p-2">
-            <div className="w-1 h-2 bg-cyan-400 rounded-full animate-scroll" />
-          </div>
+        <nav className={styles.nav}>
+          <a href="#mission">Миссия</a>
+          <a href="#metrics">Метрики</a>
+          <a href="#voice">Голос</a>
+          <a href="#tech">Технологии</a>
+        </nav>
+        <div className={styles.headerActions}>
+          <Link to="/auth/login" className={styles.ghostBtn}>Войти</Link>
+          <Link to="/boot" className={styles.primaryBtn}>Запустить систему</Link>
         </div>
-      </section>
+      </header>
 
-      {/* Feature Grid: Strategic Pillars */}
-      <section className="py-32 px-6 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { 
-              title: 'Quantum_Bridge', 
-              desc: 'Seamlessly distribute heavy reasoning tasks to global quantum clusters (IBM, D-Wave).',
-              icon: '⚛️'
-            },
-            { 
-              title: 'Sentinel_Active', 
-              desc: 'Real-time darknet monitoring and automated network perimeter defense.',
-              icon: '🛡️'
-            },
-            { 
-              title: 'Project_Fabricator', 
-              desc: 'Autonomous code synthesis. JARVIS builds your blueprints while you dream.',
-              icon: '🏗️'
-            }
-          ].map((feature) => (
-            <div key={feature.title} className="glass p-10 rounded-3xl border border-white/5 hover:border-cyan-500/30 transition-all group">
-              <div className="text-4xl mb-6 group-hover:scale-110 transition-transform">{feature.icon}</div>
-              <h3 className="text-xl font-display tracking-widest text-white mb-4 uppercase">{feature.title}</h3>
-              <p className="text-slate-400 leading-relaxed font-light">{feature.desc}</p>
+      <main>
+        <section className={styles.hero}>
+          <div className={styles.heroContent}>
+            <div className={styles.heroKicker}>NON-TOUCH CONTROL</div>
+            <h1 className={styles.heroTitle}>
+              Квантовый интеллект,
+              <span> который держит систему в идеальном порядке</span>
+            </h1>
+            <p className={styles.heroBody}>
+              Aurion OS — это автономный контур управления, где голос, метрики и миссии
+              синхронизированы в едином поле. Без визуальных сдвигов, без шума, без скрытых ошибок.
+            </p>
+            <div className={styles.heroActions}>
+              <Link to="/boot" className={styles.primaryBtn}>Войти в контур</Link>
+              <Link to="/auth/login" className={styles.ghostBtn}>Перейти к приложению</Link>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className={styles.heroMeta}>
+              <div>
+                <span className={styles.metaLabel}>Состояние</span>
+                <span className={styles.metaValue}>ONLINE</span>
+              </div>
+              <div>
+                <span className={styles.metaLabel}>Режим</span>
+                <span className={styles.metaValue}>AUTONOMOUS</span>
+              </div>
+              <div>
+                <span className={styles.metaLabel}>Протокол</span>
+                <span className={styles.metaValue}>JARVIS</span>
+              </div>
+            </div>
+          </div>
+          <div className={styles.heroVisual}>
+            <div className={styles.orbFrame}>
+              <CoreOrb size={220} active />
+            </div>
+            <div className={styles.orbCaption}>
+              Центральное ядро автономности
+            </div>
+          </div>
+        </section>
 
-      {/* Social Proof / Trust HUD */}
-      <footer className="py-12 border-t border-white/5 text-center">
-        <div className="text-[10px] font-mono text-slate-600 uppercase tracking-[0.5em] mb-4">
-          AURION_INTELLIGENCE_NETWORK_GLOBAL
-        </div>
-        <p className="text-slate-500 text-sm">© 2026 Aurion OS. Developed for the future of humanity.</p>
-      </footer>
+        <section id="mission" className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionKicker}>Mission</span>
+            <h2 className={styles.sectionTitle}>Технологический прорыв в управлении интеллектом</h2>
+          </div>
+          <p className={styles.sectionBody}>
+            Мы строим систему, которая ощущается как Джарвис: точная, спокойная,
+            предвосхищающая действия. Всё, что делает Aurion OS, — это чёткая инженерия
+            и выверенный визуал, где каждое движение имеет смысл.
+          </p>
+        </section>
 
+        <section id="metrics" className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionKicker}>System Metrics</span>
+            <h2 className={styles.sectionTitle}>Контроль состояния в одном взгляде</h2>
+          </div>
+          <div className={styles.metricsGrid}>
+            <div>
+              <span className={styles.metricLabel}>Активных контуров</span>
+              <span className={styles.metricValue}>12</span>
+            </div>
+            <div>
+              <span className={styles.metricLabel}>Потоков миссий</span>
+              <span className={styles.metricValue}>8</span>
+            </div>
+            <div>
+              <span className={styles.metricLabel}>Стабильность</span>
+              <span className={styles.metricValue}>99.9%</span>
+            </div>
+            <div>
+              <span className={styles.metricLabel}>Голосовой канал</span>
+              <span className={styles.metricValue}>READY</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="voice" className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionKicker}>Voice Channel</span>
+            <h2 className={styles.sectionTitle}>Голос как единственный интерфейс</h2>
+          </div>
+          <p className={styles.sectionBody}>
+            Aurora-диалог работает в реальном времени: слушает, анализирует, реагирует.
+            Больше не нужно держать в голове десятки окон — вы управляете системой голосом.
+          </p>
+          <div className={styles.voicePanel}>
+            <div>
+              <div className={styles.voiceTitle}>Aurion Listening</div>
+              <div className={styles.voiceStatus}>Ожидаю команду оператора</div>
+            </div>
+            <Link to="/boot" className={styles.primaryBtn}>Активировать канал</Link>
+          </div>
+        </section>
+
+        <section id="tech" className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionKicker}>Architecture</span>
+            <h2 className={styles.sectionTitle}>Квантовая архитектура, собранная в единый контур</h2>
+          </div>
+          <p className={styles.sectionBody}>
+            В основе — автономные агенты, квантовые вычисления и нейросетевые
+            слои, синхронизированные в одно стабильное поле. Система остаётся
+            стабильной независимо от нагрузки и сценария.
+          </p>
+        </section>
+      </main>
     </div>
-  );
-};
+  )
+}

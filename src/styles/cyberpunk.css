@@ -1,9 +1,9 @@
 :root {
-  --quantum-cyan: #00f3ff;
+  --quantum-cyan: #ffb347;
   --quantum-indigo: #1a1a2e;
   --quantum-magenta: #ff00ff;
   --glass-bg: rgba(26, 26, 46, 0.7);
-  --neon-glow: 0 0 15px rgba(0, 243, 255, 0.5);
+  --neon-glow: 0 0 15px rgba(255, 179, 71, 0.5);
 }
 
 .cyber-dashboard {
@@ -18,7 +18,7 @@
 .quantum-glass {
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 243, 255, 0.2);
+  border: 1px solid rgba(255, 179, 71, 0.2);
   border-radius: 12px;
   box-shadow: var(--neon-glow);
   padding: 1.5rem;
@@ -27,7 +27,7 @@
 
 .quantum-glass:hover {
   border-color: var(--quantum-cyan);
-  box-shadow: 0 0 25px rgba(0, 243, 255, 0.8);
+  box-shadow: 0 0 25px rgba(255, 179, 71, 0.8);
   transform: translateY(-2px);
 }
 
@@ -71,7 +71,7 @@
 .proactivity-item {
   margin-bottom: 1rem;
   padding: 1rem;
-  background: rgba(0, 243, 255, 0.05);
+  background: rgba(255, 179, 71, 0.08);
   border-left: 3px solid var(--quantum-cyan);
   animation: slideIn 0.5s forwards;
 }

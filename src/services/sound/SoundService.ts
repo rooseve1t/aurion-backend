@@ -521,7 +521,7 @@ export class SoundService extends EventEmitter implements IAudioEngine {
    * Создание цепочки эффектов
    */
   private createEffectChain(source: AudioBufferSourceNode, options: SoundPlayOptions): AudioNode {
-    let currentNode: AudioNode = source
+    const currentNode: AudioNode = source
     
     // Применение эффектов
     if (options.effects) {

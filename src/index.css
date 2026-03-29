@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "./styles/hud.css";
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -11,32 +12,32 @@
 }
 
 :root {
-  --bg: #050816;
-  --bg-deep: #02050f;
-  --bg-panel: rgba(9, 18, 40, 0.82);
-  --bg-panel-strong: rgba(8, 16, 35, 0.92);
-  --bg-soft: rgba(13, 27, 58, 0.56);
-  --bg-hover: rgba(18, 36, 72, 0.84);
-  --border: rgba(94, 136, 211, 0.22);
-  --border-strong: rgba(42, 224, 255, 0.42);
-  --cyan: #17e7ff;
-  --cyan-soft: rgba(23, 231, 255, 0.12);
-  --cyan-strong: #5cf1ff;
-  --blue: #4a88ff;
-  --violet: #7b6dff;
-  --green: #2fe38b;
-  --amber: #ffbe48;
-  --red: #ff6c85;
-  --text: rgba(243, 249, 255, 0.96);
-  --text-soft: rgba(188, 208, 239, 0.86);
-  --text-muted: rgba(142, 166, 201, 0.78);
-  --shadow-lg: 0 32px 80px rgba(0, 0, 0, 0.42);
-  --shadow-md: 0 18px 46px rgba(0, 0, 0, 0.28);
-  --shadow-cyan: 0 0 36px rgba(23, 231, 255, 0.16);
-  --radius: 24px;
-  --radius-sm: 18px;
+  --bg: #06080d;
+  --bg-deep: #030408;
+  --bg-panel: rgba(10, 14, 20, 0.78);
+  --bg-panel-strong: rgba(8, 12, 18, 0.92);
+  --bg-soft: rgba(18, 26, 36, 0.62);
+  --bg-hover: rgba(22, 32, 46, 0.9);
+  --border: rgba(120, 160, 210, 0.2);
+  --border-strong: rgba(71, 231, 255, 0.42);
+  --cyan: #ffb347;
+  --cyan-soft: rgba(255, 179, 71, 0.12);
+  --cyan-strong: #ffd38a;
+  --amber: #ffb347;
+  --amber-strong: #ffd38a;
+  --green: #29d98f;
+  --red: #ff6b6b;
+  --text: rgba(245, 248, 255, 0.96);
+  --text-soft: rgba(197, 213, 236, 0.86);
+  --text-muted: rgba(150, 170, 198, 0.74);
+  --shadow-lg: 0 32px 80px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 18px 46px rgba(0, 0, 0, 0.32);
+  --shadow-cyan: 0 0 36px rgba(255, 179, 71, 0.22);
+  --radius: 22px;
+  --radius-sm: 16px;
   --transition: 240ms ease;
-  --font: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Orbitron', 'Manrope', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -54,10 +55,10 @@ html {
 
 body {
   background:
-    radial-gradient(56rem 38rem at 50% -8%, rgba(23, 231, 255, 0.18), transparent 52%),
-    radial-gradient(32rem 24rem at 82% 20%, rgba(74, 136, 255, 0.16), transparent 58%),
-    radial-gradient(26rem 22rem at 20% 82%, rgba(91, 126, 255, 0.12), transparent 58%),
-    linear-gradient(180deg, #071022 0%, #040915 45%, #02050f 100%);
+    radial-gradient(54rem 36rem at 50% -8%, rgba(71, 231, 255, 0.16), transparent 55%),
+    radial-gradient(32rem 24rem at 82% 22%, rgba(255, 179, 71, 0.15), transparent 62%),
+    radial-gradient(28rem 22rem at 18% 82%, rgba(71, 231, 255, 0.12), transparent 60%),
+    linear-gradient(180deg, #080b12 0%, #05070d 45%, #030408 100%);
   color: var(--text);
   font-family: var(--font);
   font-size: 15px;
@@ -78,11 +79,11 @@ body::after {
 
 body::before {
   background-image:
-    linear-gradient(rgba(79, 124, 196, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 124, 196, 0.08) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(circle at center, black 28%, transparent 88%);
-  opacity: 0.38;
+    linear-gradient(rgba(98, 140, 196, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(98, 140, 196, 0.08) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at center, black 26%, transparent 86%);
+  opacity: 0.32;
 }
 
 body::after {
@@ -201,13 +202,13 @@ a {
 }
 
 .btn-cyan {
-  color: #03121d;
-  background: linear-gradient(135deg, var(--cyan-strong), #7bd6ff 52%, #6c9eff);
-  box-shadow: 0 14px 32px rgba(23, 231, 255, 0.24);
+  color: #031017;
+  background: linear-gradient(135deg, var(--cyan-strong), #a6f6ff 52%, #7ee6ff);
+  box-shadow: 0 14px 32px rgba(71, 231, 255, 0.22);
 }
 
 .btn-cyan:hover {
-  box-shadow: 0 18px 36px rgba(23, 231, 255, 0.28);
+  box-shadow: 0 18px 36px rgba(71, 231, 255, 0.28);
 }
 
 .btn-ghost {

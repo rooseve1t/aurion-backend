@@ -85,7 +85,7 @@ export function ProfilePage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <User size={20} color="var(--cyan)" />
+        <User size={20} color="var(--amber)" />
         <span className={styles.title}>ПРОФИЛЬ</span>
       </div>
 

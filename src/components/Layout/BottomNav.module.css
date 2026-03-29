@@ -37,8 +37,8 @@
 }
 
 .active {
-  color: var(--cyan);
-  background: linear-gradient(180deg, rgba(23, 231, 255, 0.12), rgba(23, 231, 255, 0.04));
+  color: var(--amber);
+  background: linear-gradient(180deg, rgba(255, 179, 71, 0.16), rgba(255, 179, 71, 0.06));
 }
 
 @media (max-width: 700px) {

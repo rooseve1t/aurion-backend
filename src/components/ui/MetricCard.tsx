@@ -1,7 +1,7 @@
 import React from 'react'
 import { LucideIcon } from 'lucide-react'
 
-interface MetricCardProps {
+export interface MetricCardProps {
   title: string
   value: string | number
   unit?: string

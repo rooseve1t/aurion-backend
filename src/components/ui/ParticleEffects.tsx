@@ -617,12 +617,4 @@ export function AuroraEffect({
   )
 }
 
-// Экспорт всех компонентов
-export {
-  ParticleField,
-  FloatingParticles,
-  MatrixRain,
-  Starfield,
-  GeometricOverlay,
-  AuroraEffect
-}
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-interface CircularProgressProps {
+export interface CircularProgressProps {
   value: number
   max?: number
   size?: number

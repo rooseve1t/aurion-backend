@@ -18,18 +18,19 @@ export function useWakeWord({ onActivated, enabled = true }: UseWakeWordOptions)
   const activeRef = useRef(false)
 
   const start = useCallback(() => {
-    const SpeechRecognition =
-      (window as Window & { SpeechRecognition?: typeof globalThis.SpeechRecognition })
-        .SpeechRecognition ||
-      (window as Window & { webkitSpeechRecognition?: typeof globalThis.SpeechRecognition })
-        .webkitSpeechRecognition
+    type SpeechRecognitionCtor = new () => SpeechRecognition
+    const w = window as Window & {
+      SpeechRecognition?: SpeechRecognitionCtor
+      webkitSpeechRecognition?: SpeechRecognitionCtor
+    }
+    const SpeechRecognitionImpl = w.SpeechRecognition || w.webkitSpeechRecognition
 
-    if (!SpeechRecognition) {
+    if (!SpeechRecognitionImpl) {
       console.warn('[useWakeWord] Web Speech API не поддерживается в этом браузере')
       return
     }
 
-    const recognition = new SpeechRecognition()
+    const recognition = new SpeechRecognitionImpl()
     recognition.lang = 'ru-RU'
     recognition.continuous = true
     recognition.interimResults = true
