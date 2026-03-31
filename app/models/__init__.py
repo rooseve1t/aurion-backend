@@ -10,14 +10,17 @@ from .payment import Tariff, Subscription, Payment
 from .quantum import QuantumJob
 from .osint import AuditLog
 from .evolution import EvolutionExperiment
+from .trusted_device import TrustedDevice
+from .feed_card import FeedCard
+from .evolution_proposal import EvolutionProposal
 
 __all__ = [
     "User",
-    "MemoryEntry", 
+    "MemoryEntry",
     "Device",
     "DeviceCommandLog",
     "Agent",
-    "AgentTask", 
+    "AgentTask",
     "AgentLog",
     "BankConnection",
     "BankAccount",
@@ -27,5 +30,8 @@ __all__ = [
     "Payment",
     "QuantumJob",
     "AuditLog",
-    "EvolutionExperiment"
+    "EvolutionExperiment",
+    "TrustedDevice",
+    "FeedCard",
+    "EvolutionProposal",
 ]

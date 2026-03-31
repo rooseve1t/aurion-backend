@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'Aurion OS',
         short_name: 'Aurion',
         description: 'Персональный ИИ-ассистент нового поколения',
-        theme_color: '#000000',
-        background_color: '#000000',
+        theme_color: '#0a0a0f',
+        background_color: '#0a0a0f',
         display: 'standalone',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -33,6 +33,11 @@ export default defineConfig({
             urlPattern: /^https:\/\/api\./,
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', expiration: { maxEntries: 50 } }
+          },
+          {
+            urlPattern: /\/api\/v2\/feed/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'feed-cache', expiration: { maxEntries: 100, maxAgeSeconds: 86400 } }
           }
         ]
       }

@@ -26,6 +26,10 @@ class User(Base):
     role = Column(String(20), default="user", nullable=False)  # user, admin, creator
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+
+    # Telegram и WebAuthn
+    telegram_id = Column(String(20), unique=True, nullable=True, index=True)
+    webauthn_credentials = Column(JSONType, default=list, nullable=True)  # list of WebAuthn credential dicts
     
     # Профиль
     display_name = Column(String(100), nullable=True)
@@ -50,6 +54,9 @@ class User(Base):
     payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
     quantum_jobs = relationship("QuantumJob", back_populates="user", cascade="all, delete-orphan")
     evolution_experiments = relationship("EvolutionExperiment", back_populates="user", cascade="all, delete-orphan")
+    trusted_devices = relationship("TrustedDevice", back_populates="user", cascade="all, delete-orphan")
+    feed_cards = relationship("FeedCard", back_populates="user", cascade="all, delete-orphan")
+    evolution_proposals = relationship("EvolutionProposal", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

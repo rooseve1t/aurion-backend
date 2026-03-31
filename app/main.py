@@ -169,6 +169,22 @@ async def add_process_time_header(request: Request, call_next: Callable[[Request
 
 # Подключение роутеров
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["authentication"])
+
+# v2 роутеры
+from .api.auth_v2 import router as auth_v2_router
+app.include_router(auth_v2_router, prefix="/api/v2/auth", tags=["auth-v2"])
+
+from .api.feed import router as feed_v2_router
+app.include_router(feed_v2_router, prefix="/api/v2", tags=["feed-v2"])
+
+from .api.digital_twin import router as health_v2_router
+app.include_router(health_v2_router, prefix="/api/v2/health", tags=["health-v2"])
+
+from .api.smarthome_v2 import router as smarthome_v2_router
+app.include_router(smarthome_v2_router, prefix="/api/v2/smarthome", tags=["smarthome-v2"])
+
+from .api.self_evolution import router as evolution_v2_router
+app.include_router(evolution_v2_router, prefix="/api/v2/evolution", tags=["evolution-v2"])
 app.include_router(personality_router, prefix="/api/v1/jarvis/personality", tags=["jarvis-personality"])
 app.include_router(squad_router, prefix="/api/v1/jarvis/squad", tags=["jarvis-squad"])
 app.include_router(memory_router, prefix="/api/v1/memory", tags=["memory"])
@@ -199,6 +215,7 @@ app.include_router(system_router, prefix="/api/v1/system", tags=["system"])
 # Profile preferences
 from .api.profile import router as profile_router
 app.include_router(profile_router, prefix="/api/v1/profile", tags=["profile"])
+app.include_router(profile_router, prefix="/api/v2/profile", tags=["profile-v2"])
 
 
 # Health check

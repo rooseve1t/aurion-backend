@@ -1,0 +1,345 @@
+/* Стили для страницы финансов */
+
+.finance-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 28px;
+  margin: 0 0 5px 0;
+  background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.page-subtitle {
+  color: #666;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+}
+
+/* Вкладки */
+.finance-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  background: #111;
+  padding: 5px;
+  border-radius: 10px;
+}
+
+.finance-tabs button {
+  flex: 1;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.finance-tabs button:hover {
+  color: #fff;
+  background: #1a1a1a;
+}
+
+.finance-tabs button.active {
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  color: #fff;
+}
+
+/* Общий баланс */
+.total-balance {
+  background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.balance-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.balance-value {
+  display: block;
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.balance-change {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.balance-change.positive {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+/* Список валют */
+.currencies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.currency-card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.currency-card:hover {
+  border-color: #333;
+  background: #161616;
+}
+
+.currency-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.currency-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  font-size: 20px;
+}
+
+.currency-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.currency-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 16px;
+}
+
+.currency-code {
+  color: #666;
+  font-size: 12px;
+}
+
+.currency-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.currency-balance {
+  font-weight: 600;
+  color: #fff;
+  font-size: 16px;
+}
+
+.currency-usd {
+  color: #888;
+  font-size: 14px;
+}
+
+.currency-change {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.currency-change.positive {
+  background: rgba(0, 255, 136, 0.1);
+  color: #00ff88;
+}
+
+.currency-change.negative {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+}
+
+/* Транзакции */
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transaction-item {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.tx-icon {
+  width: 40px;
+  height: 40px;
+  background: #1a1a1a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+}
+
+.transaction-item.receive .tx-icon {
+  background: rgba(0, 255, 136, 0.1);
+  color: #00ff88;
+}
+
+.transaction-item.send .tx-icon {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+}
+
+.tx-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tx-type {
+  font-weight: 600;
+  color: #fff;
+}
+
+.tx-address {
+  color: #666;
+  font-size: 12px;
+}
+
+.tx-date {
+  color: #444;
+  font-size: 12px;
+}
+
+.tx-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.amount-value {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.amount-value.receive {
+  color: #00ff88;
+}
+
+.amount-value.send {
+  color: #ff4444;
+}
+
+.tx-status {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+/* Форма отправки */
+.send-section {
+  background: #111;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.send-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #888;
+  font-size: 14px;
+}
+
+.form-group input {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: #00d4ff;
+}
+
+.amount-input {
+  display: flex;
+  gap: 10px;
+}
+
+.amount-input input {
+  flex: 1;
+}
+
+.amount-input select {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.send-button {
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}

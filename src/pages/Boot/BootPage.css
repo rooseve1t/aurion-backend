@@ -1,0 +1,273 @@
+/* Стили для BootPage - экран загрузки системы */
+
+.boot-page {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Фоновые эффекты */
+.boot-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.boot-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+.boot-orb {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: orbPulse 4s ease-in-out infinite;
+}
+
+.boot-orb.cyan {
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.boot-orb.purple {
+  background: radial-gradient(circle, rgba(123, 44, 191, 0.2) 0%, transparent 70%);
+  width: 400px;
+  height: 400px;
+  top: 30%;
+  right: 20%;
+  animation-delay: -2s;
+}
+
+/* Основной контент */
+.boot-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 40px;
+}
+
+/* Логотип */
+.boot-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo-core {
+  width: 120px;
+  height: 120px;
+  position: relative;
+}
+
+.core-ring {
+  position: absolute;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  animation: ringRotate 3s linear infinite;
+}
+
+.core-ring.outer {
+  width: 100%;
+  height: 100%;
+  border-top-color: #00d4ff;
+  border-right-color: rgba(0, 212, 255, 0.3);
+}
+
+.core-ring.middle {
+  width: 75%;
+  height: 75%;
+  top: 12.5%;
+  left: 12.5%;
+  border-bottom-color: #7b2cbf;
+  border-left-color: rgba(123, 44, 191, 0.3);
+  animation-duration: 2s;
+  animation-direction: reverse;
+}
+
+.core-ring.inner {
+  width: 50%;
+  height: 50%;
+  top: 25%;
+  left: 25%;
+  border-top-color: #00ff88;
+  border-bottom-color: rgba(0, 255, 136, 0.3);
+  animation-duration: 1.5s;
+}
+
+.core-center {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  top: 35%;
+  left: 35%;
+  background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #000;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+@keyframes ringRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbPulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+/* Заголовок */
+.boot-title {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+.boot-version {
+  font-size: 12px;
+  color: #666;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Лог загрузки */
+.boot-log {
+  width: 400px;
+  max-width: 90vw;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.log-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: #666;
+  opacity: 0;
+  animation: lineFadeIn 0.3s ease forwards;
+}
+
+.log-line.active {
+  color: #00d4ff;
+}
+
+.log-line.done {
+  color: #00ff88;
+}
+
+.log-line.done::after {
+  content: '✓';
+  margin-left: auto;
+  color: #00ff88;
+}
+
+.log-prompt {
+  color: #00d4ff;
+}
+
+@keyframes lineFadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Прогресс-бар */
+.boot-progress {
+  width: 300px;
+  max-width: 80vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #7b2cbf, #00ff88);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.progress-text {
+  font-size: 14px;
+  color: #00d4ff;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .boot-title {
+    font-size: 32px;
+  }
+  
+  .logo-core {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .core-center {
+    font-size: 20px;
+  }
+  
+  .boot-log {
+    width: 90vw;
+    font-size: 11px;
+    padding: 15px;
+  }
+  
+  .boot-progress {
+    width: 80vw;
+  }
+}

@@ -655,3 +655,8 @@ async def init_voice_jarvis_service():
 async def get_voice_jarvis_service() -> VoiceJarvisService:
     """Получение экземпляра голосового сервиса"""
     return voice_jarvis_service
+
+
+def get_jarvis_service() -> VoiceJarvisService:
+    """Синхронный алиас для получения экземпляра сервиса (совместимость с новыми сервисами)."""
+    return voice_jarvis_service

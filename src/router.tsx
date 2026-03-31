@@ -3,9 +3,10 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { BootPage }      from '@/pages/Boot/BootPage'
-import { LandingPage }   from '@/pages/Landing/LandingPage'
+import { CompanyPortalPage } from '@/pages/Portal/CompanyPortalPage'
 import { AuthPage }      from '@/pages/Auth/AuthPage'
 import { DashboardPage } from '@/pages/Dashboard/DashboardPage'
+import { ActivityFeedPage } from '@/pages/Feed/ActivityFeedPage'
 import { MemoryPage }    from '@/pages/Memory/MemoryPage'
 import { HomePage }      from '@/pages/Home/HomePage'
 import { AutonomyPage }  from '@/pages/Autonomy/AutonomyPage'
@@ -13,8 +14,8 @@ import { PaymentsPage }  from '@/pages/Payments/PaymentsPage'
 import { ProfilePage }   from '@/pages/Profile/ProfilePage'
 import { GuardianPage }  from '@/pages/Guardian/GuardianPage'
 import { DIYPage }       from '@/pages/DIY/DIYPage'
-import { HealthPage }    from '@/pages/Stubs/HealthPage'
-import { TwinPage }      from '@/pages/Stubs/TwinPage'
+import { HealthPage }      from '@/pages/Stubs/HealthPage'
+import { DigitalTwinPage } from '@/pages/DigitalTwin/DigitalTwinPage'
 import { RemindersPage } from '@/pages/Stubs/RemindersPage'
 import { SocialPage }    from '@/pages/Stubs/SocialPage'
 import { MediaPage }     from '@/pages/Stubs/MediaPage'
@@ -27,13 +28,14 @@ const wrap = (element: React.ReactElement, name: string) => (
 )
 
 export const router = createBrowserRouter([
-  { path: '/',             element: <LandingPage /> },
+  { path: '/',             element: <CompanyPortalPage /> },
   { path: '/boot',         element: <BootPage /> },
   { path: '/auth/login',   element: <AuthPage /> },
   { path: '/auth/register',element: <AuthPage /> },
   {
     element: <AppLayout />,
     children: [
+      { path: '/feed',      element: wrap(<ActivityFeedPage />, 'Activity Feed') },
       { path: '/dashboard', element: wrap(<DashboardPage />, 'Dashboard') },
       { path: '/memory',    element: wrap(<MemoryPage />, 'Memory')       },
       { path: '/home',      element: wrap(<HomePage />, 'Home')           },
@@ -43,14 +45,14 @@ export const router = createBrowserRouter([
       { path: '/guardian',  element: wrap(<GuardianPage />, 'Guardian')   },
       { path: '/diy',       element: wrap(<DIYPage />, 'DIY')             },
       { path: '/health',    element: wrap(<HealthPage />, 'Health')       },
-      { path: '/twin',      element: wrap(<TwinPage />, 'Twin')           },
+      { path: '/twin',      element: wrap(<DigitalTwinPage />, 'Digital Twin') },
       { path: '/reminders', element: wrap(<RemindersPage />, 'Reminders') },
       { path: '/social',    element: wrap(<SocialPage />, 'Social')       },
       { path: '/media',     element: wrap(<MediaPage />, 'Media')         },
       { path: '/resonance', element: wrap(<NeuralResonance />, 'Neural Resonance') },
       { path: '/vault',     element: wrap(<QuantumVault />, 'Quantum Vault') },
       { path: '/ar',        element: wrap(<ARPage />, 'AR')               },
-      { path: '*',          element: <Navigate to="/dashboard" replace /> },
+      { path: '*',          element: <Navigate to="/feed" replace /> },
     ],
   },
 ])

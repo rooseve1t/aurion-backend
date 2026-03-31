@@ -1,0 +1,164 @@
+/* Стили для Layout компонента */
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Шапка */
+.header {
+  height: 60px;
+  background: #111111;
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-name {
+  color: #888;
+  font-size: 14px;
+}
+
+.logout-button {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.logout-button:hover {
+  background: #cc3333;
+}
+
+/* Основной контейнер */
+.main-container {
+  display: flex;
+  flex: 1;
+  margin-top: 60px;
+}
+
+/* Боковая панель */
+.sidebar {
+  width: 250px;
+  background: #111111;
+  border-right: 1px solid #222;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  bottom: 0;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 99;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.nav-menu {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-link {
+  padding: 15px 20px;
+  color: #888;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.nav-link:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.nav-link.active {
+  background: #1a1a1a;
+  color: #00d4ff;
+  border-left-color: #00d4ff;
+}
+
+/* Основное содержимое */
+.main-content {
+  flex: 1;
+  padding: 20px;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+}
+
+/* На десктопе боковая панель всегда видна */
+@media (min-width: 768px) {
+  .sidebar {
+    transform: translateX(0);
+    position: static;
+    height: calc(100vh - 60px);
+  }
+  
+  .main-content {
+    margin-left: 250px;
+  }
+  
+  .menu-button {
+    display: none;
+  }
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 15px;
+  }
+  
+  .logo {
+    font-size: 18px;
+  }
+}

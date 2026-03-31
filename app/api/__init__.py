@@ -2,6 +2,7 @@
 API роутеры Aurion OS
 """
 from .auth import router as auth_router
+from .auth_v2 import router as auth_v2_router
 from .memory import router as memory_router
 from .voice import router as voice_router
 from .voice_jarvis import router as voice_jarvis_router
@@ -20,6 +21,7 @@ from .squad import router as squad_router
 
 __all__ = [
     "auth_router",
+    "auth_v2_router",
     "memory_router", 
     "voice_router",
     "voice_jarvis_router",

@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Encryption
+    ENCRYPTION_KEY: str = ""  # 32-байтный hex для AES-256-GCM
+
     # Quantum
     QUANTUM_RINGS_TOKEN: str = "s_977d151d919a41738625077677c3723f"
     IBM_QUANTUM_TOKEN: str = ""

@@ -32,12 +32,30 @@ except Exception:
 @pytest.fixture(scope="session", autouse=True)
 def init_test_db():
     """Initialize test database before running tests"""
+    # Import all models so Base.metadata is populated before create_all
+    import app.models.user  # noqa: F401
+    import app.models.memory  # noqa: F401
+    import app.models.agent  # noqa: F401
+    import app.models.device  # noqa: F401
+    import app.models.feed_card  # noqa: F401
+    import app.models.payment  # noqa: F401
+    import app.models.evolution_proposal  # noqa: F401
+    import app.models.evolution  # noqa: F401
+    import app.models.finance  # noqa: F401
+    import app.models.trusted_device  # noqa: F401
+    try:
+        import app.models.osint  # noqa: F401
+        import app.models.quantum  # noqa: F401
+        import app.models.vpn  # noqa: F401
+    except ImportError:
+        pass
+
     from app.database_final import init_db, close_db
 
     asyncio.run(init_db())
-    
+
     yield
-    
+
     # Cleanup after tests
     try:
         asyncio.run(close_db())
