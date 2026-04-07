@@ -303,20 +303,40 @@ class VoiceJarvisService:
             print(f"Yandex STT Error: {e}")
             return None
     
-    async def generate_response(self, user_input: str, context: Optional[List[Dict]] = None) -> str:
+    async def generate_response(
+        self,
+        user_input: str,
+        context: Optional[List[Dict]] = None,
+        user_id: Optional[str] = None,
+        db: Optional[Any] = None,
+    ) -> str:
         """Генерация ответа с помощью LLM"""
         try:
             if self.llm_provider == "openai":
-                return await self._llm_openai(user_input, context)
+                response_text = await self._llm_openai(user_input, context)
             elif self.llm_provider == "anthropic":
-                return await self._llm_anthropic(user_input, context)
+                response_text = await self._llm_anthropic(user_input, context)
             elif self.llm_provider == "yandex":
-                return await self._llm_yandex(user_input, context)
+                response_text = await self._llm_yandex(user_input, context)
             else:
                 raise ValueError(f"Unknown LLM provider: {self.llm_provider}")
         except Exception as e:
             print(f"LLM Error: {e}")
             return "Извините, произошла ошибка при генерации ответа."
+
+        # Memory surfacing — проактивное всплытие старых воспоминаний
+        if user_id and db:
+            try:
+                from .jarvis.memory_surfacer import get_memory_surfacer
+                surfacer = get_memory_surfacer()
+                surfaced = await surfacer.find_relevant_memory(user_id, user_input, db)
+                if surfaced:
+                    phrase = surfacer.format_surfacing_phrase(surfaced)
+                    response_text = response_text + phrase
+            except Exception as _surf_exc:
+                logger.warning(f"Memory surfacing error: {_surf_exc}")
+
+        return response_text
     
     async def _llm_openai(self, user_input: str, context: Optional[List[Dict]] = None) -> str:
         """OpenAI GPT-4 — новый API (openai v1+)"""
@@ -565,25 +585,56 @@ class VoiceJarvisService:
             print(f"Yandex TTS Error: {e}")
             return None
     
-    async def process_voice_message(self, audio_data: bytes, context: Optional[List[Dict]] = None) -> Optional[Dict[str, Any]]:
+    async def process_voice_message(
+        self,
+        audio_data: bytes,
+        context: Optional[List[Dict]] = None,
+        user_id: Optional[str] = None,
+        db: Optional[Any] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Полная обработка голосового сообщения"""
         try:
             # 1. Распознавание речи
             user_text = await self.speech_to_text(audio_data)
             if not user_text:
                 return {"error": "Не удалось распознать речь"}
-            
-            # 2. Генерация ответа
-            jarvis_response = await self.generate_response(user_text, context)
-            
+
+            # 2. Генерация ответа (с проактивным всплытием воспоминаний если есть user_id и db)
+            memory_surfaced = False
+            surfaced_memory_title = None
+            if user_id and db:
+                try:
+                    from .jarvis.memory_surfacer import get_memory_surfacer
+                    surfacer = get_memory_surfacer()
+                    surfaced = await surfacer.find_relevant_memory(user_id, user_text, db)
+                    if surfaced:
+                        jarvis_response = await self.generate_response(user_text, context)
+                        phrase = surfacer.format_surfacing_phrase(surfaced)
+                        jarvis_response = jarvis_response + phrase
+                        memory_surfaced = True
+                        surfaced_memory_title = surfaced.title
+                    else:
+                        jarvis_response = await self.generate_response(user_text, context)
+                        memory_surfaced = False
+                        surfaced_memory_title = None
+                except Exception as _surf_exc:
+                    logger.warning(f"Memory surfacing error: {_surf_exc}")
+                    jarvis_response = await self.generate_response(user_text, context)
+                    memory_surfaced = False
+                    surfaced_memory_title = None
+            else:
+                jarvis_response = await self.generate_response(user_text, context)
+
             # 3. Синтез речи
             audio_response = await self.text_to_speech(jarvis_response)
-            
+
             return {
                 "user_text": user_text,
                 "jarvis_text": jarvis_response,
                 "audio_response": audio_response,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "memory_surfaced": memory_surfaced,
+                "surfaced_memory_title": surfaced_memory_title,
             }
         except Exception as e:
             print(f"Voice processing error: {e}")

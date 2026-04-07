@@ -259,6 +259,32 @@ class AutonomyEngine:
     async def _execute_action(self, action: AutonomousAction) -> Any:
         """Выполнить автономное действие"""
         logger.info(f"⚙️ Executing autonomous action: {action.id}")
+
+        # Risk assessment before execution
+        try:
+            from .risk_assessor import get_risk_assessor
+            assessor = get_risk_assessor()
+            risk_report = assessor.assess(
+                action_id=action.id,
+                action_type=action.action_type.value,
+                risk_level=action.risk_level,
+                estimated_time=action.estimated_time,
+                autonomy_level_value=self.current_level.value,
+                system_metrics=self.system_metrics,
+            )
+            logger.info(f"Risk assessment for {action.id}: level={risk_report.risk_level}, auto_approve={risk_report.auto_approve}")
+
+            if not risk_report.auto_approve:
+                logger.warning(f"Action {action.id} requires confirmation: {risk_report.warning_message}")
+                return {
+                    "status": "pending_confirmation",
+                    "action_id": action.id,
+                    "risk_report": risk_report.to_dict(),
+                    "message": risk_report.warning_message,
+                }
+        except Exception as _risk_exc:
+            logger.warning(f"Risk assessment error (continuing): {_risk_exc}")
+
         try:
             result = await action.execution_func()
             self.action_history.append({

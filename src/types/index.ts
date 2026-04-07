@@ -259,6 +259,9 @@ export interface ChatMessage {
 
 export interface WsMessage {
   type: 'chat_response' | 'agent_task_update' | 'error'
+    // New types for JARVIS features
+    | 'system_hud_update' | 'house_party_started' | 'house_party_agent_update'
+    | 'house_party_complete' | 'emergency_protocol_triggered' | 'research_insight_ready' | 'stress_alert'
   content?: string
   status?: string
   task_id?: number
@@ -272,4 +275,21 @@ export interface WsMessage {
     persona?: string
     note?: string
   }
+  snapshot?: HUDSnapshot
+  message?: string
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+export interface HUDSnapshot {
+  timestamp: string
+  cpu_percent: number
+  memory_percent: number
+  memory_used_gb: number
+  active_agents: number
+  pending_tasks: number
+  threat_level: 'low' | 'medium' | 'high' | 'critical' | 'unknown'
+  autonomy_level: string
+  active_missions: number
+  stress_index: number
+  uptime_seconds: number
 }

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useSystemStore } from '@/store/systemStore'
 import { SideNav } from './SideNav'
 import { BottomNav } from './BottomNav'
+import { JarvisHUDOverlay } from '@/components/HUD'
 import styles from './AppLayout.module.css'
 
 export function AppLayout() {
@@ -54,6 +55,7 @@ export function AppLayout() {
         <Outlet />
       </main>
       <BottomNav />
+      <JarvisHUDOverlay />
     </div>
   )
 }

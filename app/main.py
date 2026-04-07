@@ -212,10 +212,22 @@ app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["dashboar
 from .api.system import router as system_router
 app.include_router(system_router, prefix="/api/v1/system", tags=["system"])
 
+# Passive research
+from .api.research import router as research_router
+app.include_router(research_router, prefix="/api/v1", tags=["research"])
+
 # Profile preferences
 from .api.profile import router as profile_router
 app.include_router(profile_router, prefix="/api/v1/profile", tags=["profile"])
 app.include_router(profile_router, prefix="/api/v2/profile", tags=["profile-v2"])
+
+# House Party Protocol
+from .api.house_party import router as house_party_router
+app.include_router(house_party_router, prefix="/api/v1", tags=["house-party"])
+
+# Emergency Protocol
+from .api.emergency import router as emergency_router
+app.include_router(emergency_router, prefix="/api/v1", tags=["emergency"])
 
 
 # Health check
