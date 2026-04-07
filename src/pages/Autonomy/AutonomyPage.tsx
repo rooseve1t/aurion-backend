@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/useToast'
 import type { Agent, AgentTask } from '@/types'
 import { agentTypeLabel, taskStatusLabel, formatDate } from '@/utils'
 import styles from './AutonomyPage.module.css'
+import { HousePartyDashboard } from '@/components/Widgets/HousePartyDashboard'
 
 const STATUS_TONE: Record<string, string> = {
   queued: 'queued',
@@ -151,6 +152,10 @@ export function AutonomyPage() {
             ))}
           </div>
         </section>
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        <HousePartyDashboard />
       </div>
 
       <footer className={styles.footer}>

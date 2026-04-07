@@ -6,9 +6,12 @@ const DYNAMIC_CACHE = 'aurion-dynamic-v2.0.0';
 // 🎨 Файлы для кэширования
 const STATIC_FILES = [
   '/',
-  '/preview_enhanced.html',
+  '/offline.html',
   '/manifest.json',
-  '/sw.js'
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/apple-touch-icon.png',
+  '/favicon.svg'
 ];
 
 // 🎨 Установка Service Worker
@@ -93,8 +96,15 @@ self.addEventListener('fetch', (event) => {
               });
           })
           .catch(() => {
-            // 🎨 Если запрос не удался, пытаемся найти в кэше
-            return caches.match(request);
+            // 🎨 Если запрос не удался — кэш или offline-страница
+            return caches.match(request).then((cached) => {
+              if (cached) return cached;
+              // Для навигационных запросов показываем offline-страницу
+              if (request.mode === 'navigate') {
+                return caches.match('/offline.html');
+              }
+              return cached;
+            });
           });
       })
   );
@@ -103,9 +113,9 @@ self.addEventListener('fetch', (event) => {
 // 🎨 Обработка push уведомлений
 self.addEventListener('push', (event) => {
   const options = {
-    body: event.data.text(),
-    icon: '/manifest.json',
-    badge: '/manifest.json',
+    body: event.data ? event.data.text() : 'Aurion OS уведомление',
+    icon: '/pwa-192x192.png',
+    badge: '/pwa-192x192.png',
     vibrate: [200, 100, 200],
     data: {
       dateOfArrival: Date.now(),
@@ -115,12 +125,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'Открыть Aurion OS',
-        icon: '/manifest.json'
+        icon: '/pwa-192x192.png'
       },
       {
         action: 'close',
         title: 'Закрыть',
-        icon: '/manifest.json'
+        icon: '/pwa-192x192.png'
       }
     ]
   };
