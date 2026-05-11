@@ -181,21 +181,13 @@ class AutonomyEngine:
         logger.info("🚀 Starting JARVIS autonomy monitoring...")
         while True:
             try:
-                # В реальной системе здесь будет сбор реальных метрик
-                # Сейчас - имитация
-                import random
-                self.system_metrics = {
-                    "cpu_usage": random.uniform(10.0, 90.0),
-                    "memory_usage": random.uniform(20.0, 95.0),
-                    "disk_usage": 45.5,
-                    "error_rate": random.uniform(0.0, 10.0),
-                    "response_time": random.uniform(100.0, 3000.0)
-                }
+                # Сбор реальных метрик
+                await self._collect_system_metrics()
                 
                 # Проверка порогов и запуск действий
                 await self._check_thresholds()
                 
-                await asyncio.sleep(60)  # Интервал мониторинга
+                await asyncio.sleep(30)  # Интервал мониторинга сокращен для отзывчивости
             except Exception as e:
                 logger.error(f"Error in autonomy monitoring: {e}")
                 await asyncio.sleep(10)
@@ -203,22 +195,26 @@ class AutonomyEngine:
     async def _check_thresholds(self) -> None:
         """Проверить метрики на превышение порогов"""
         for metric, threshold in self.thresholds.items():
-            if self.system_metrics.get(metric, 0) > threshold:
-                await self._handle_threshold_breach(metric)
+            value = self.system_metrics.get(metric, 0)
+            if value > threshold:
+                await self._handle_threshold_breach(metric, value, threshold)
 
     async def _collect_system_metrics(self) -> None:
         """Собрать системные метрики через psutil (с fallback)."""
         try:
             import psutil  # type: ignore
 
-            self.system_metrics["cpu_usage"] = float(psutil.cpu_percent(interval=0))
+            self.system_metrics["cpu_usage"] = float(psutil.cpu_percent(interval=None))
             self.system_metrics["memory_usage"] = float(psutil.virtual_memory().percent)
             self.system_metrics["disk_usage"] = float(psutil.disk_usage("/").percent)
-        except Exception:
-            # Keep deterministic fallback for tests and minimal environments.
-            self.system_metrics.setdefault("cpu_usage", 50.0)
-            self.system_metrics.setdefault("memory_usage", 50.0)
-            self.system_metrics.setdefault("disk_usage", 50.0)
+            # Имитация других метрик, если нет реальных источников
+            self.system_metrics.setdefault("error_rate", 0.5)
+            self.system_metrics.setdefault("response_time", 150.0)
+        except Exception as e:
+            logger.warning(f"Failed to collect real metrics: {e}. Using deterministic fallback.")
+            self.system_metrics["cpu_usage"] = 45.0
+            self.system_metrics["memory_usage"] = 55.0
+            self.system_metrics["disk_usage"] = 60.0
 
     async def _evaluate_condition(self, condition: str) -> bool:
         """Оценить простое условие автономного действия."""
@@ -246,11 +242,27 @@ class AutonomyEngine:
                 return left_value == right_value
         return False
 
-    async def _handle_threshold_breach(self, metric: str) -> None:
+    async def _handle_threshold_breach(self, metric: str, value: float, threshold: float) -> None:
         """Обработать превышение порога"""
-        logger.warning(f"⚠️ Threshold breach: {metric} = {self.system_metrics[metric]}")
-        # Здесь будет логика подбора и запуска действий
-        pass
+        logger.warning(f"⚠️ Threshold breach: {metric} = {value} (threshold: {threshold})")
+
+        # Уведомление пользователя
+        messages = {
+            "cpu_usage": f"Сэр, загрузка процессора критическая: {value:.1f}%. Рекомендую оптимизацию.",
+            "memory_usage": f"Сэр, оперативная память почти исчерпана: {value:.1f}%. Могу очистить кэш.",
+            "disk_usage": f"Сэр, место на диске заканчивается: {value:.1f}%.",
+            "error_rate": f"Сэр, зафиксирован аномальный рост ошибок в системе: {value:.1f}%.",
+            "security_threats": "Сэр, обнаружена угроза безопасности! Активирую защитные протоколы."
+        }
+
+        msg = messages.get(metric, f"Сэр, метрика {metric} превысила порог: {value:.1f}.")
+        await self.notify_user(msg)
+
+        # Поиск и запуск подходящего действия
+        for action in self.registered_actions.values():
+            if any(metric in cond for cond in action.conditions):
+                if self.current_level.value >= action.autonomy_required.value:
+                    await self._execute_action(action)
 
     async def execute_action(self, action: AutonomousAction) -> Any:
         """Выполнить автономное действие (публичный метод)"""

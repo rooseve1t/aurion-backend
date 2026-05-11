@@ -5,6 +5,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPExce
 from fastapi.responses import JSONResponse
 from typing import Dict, Any, List, Set, cast as typing_cast
 import asyncio
+from datetime import datetime
 
 from ..services.jarvis.autonomous_jarvis import create_autonomous_jarvis_service, AutonomousJarvisService
 from ..services.jarvis.autonomy_engine import AutonomyLevel
@@ -19,11 +20,31 @@ router = APIRouter(tags=["jarvis-autonomy"])
 # Хранение активных соединений
 active_connections: Dict[str, AutonomousJarvisService] = {}
 
+async def _send_periodic_updates(websocket: WebSocket, service: AutonomousJarvisService):
+    """Периодическая отправка метрик и статуса через WebSocket"""
+    try:
+        while True:
+            status = await service.get_autonomy_status()
+            evolution_status = {}
+            if service.evolution_engine:
+                evolution_status = service.evolution_engine.get_status()
+
+            await websocket.send_json({
+                "type": "system_update",
+                "status": status,
+                "evolution": evolution_status,
+                "timestamp": datetime.now().isoformat()
+            })
+            await asyncio.sleep(10)  # Обновление каждые 10 секунд
+    except Exception as e:
+        print(f"Error in periodic updates: {e}")
+
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):
     """WebSocket для автономного JARVIS"""
     await websocket.accept()
     
+    update_task = None
     try:
         # Создать автономный сервис
         service = await create_autonomous_jarvis_service(websocket, user_id)
@@ -43,6 +64,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             "autonomy_level": autonomy_level_val
         })
         
+        # Запуск периодических обновлений
+        update_task = asyncio.create_task(_send_periodic_updates(websocket, service))
+
         # Обработка сообщений
         while True:
             data = await websocket.receive_json()
@@ -100,9 +124,13 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                     })
                     
     except WebSocketDisconnect:
+        if update_task:
+            update_task.cancel()
         if user_id in active_connections:
             del active_connections[user_id]
     except Exception as e:
+        if update_task:
+            update_task.cancel()
         await websocket.send_json({
             "type": "error",
             "message": str(e)
